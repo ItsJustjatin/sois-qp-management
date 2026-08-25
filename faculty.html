@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Faculty Portal - SOIS Question Paper Management</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="css/main.css">
+</head>
+
+<body>
+
+  <!-- FACULTY AUTHENTICATION & REGISTRATION MODAL -->
+  <div id="authOverlay" class="auth-overlay">
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="auth-logo"
+          style="background:none; box-shadow:none; padding:0; width:76px; height:76px; margin:0 auto 0.75rem auto;">
+          <svg width="76" height="76" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="60" cy="60" r="56" fill="#1e3a8a" stroke="#d97706" stroke-width="4" />
+            <path d="M60 20 L85 35 V60 C85 78 60 92 60 92 C60 92 35 78 35 60 V35 Z" fill="#1d4ed8" stroke="#f59e0b"
+              stroke-width="3" />
+            <path d="M60 25 L80 38 V58 C80 73 60 85 60 85 C60 85 40 73 40 58 V38 Z" fill="#0f172a" />
+            <text x="60" y="58" font-family="'Outfit', sans-serif" font-weight="800" font-size="22" fill="#fbbf24"
+              text-anchor="middle">PU</text>
+            <text x="60" y="74" font-family="'Inter', sans-serif" font-weight="700" font-size="9" fill="#ffffff"
+              text-anchor="middle">SOIS</text>
+            <polygon points="60,12 63,18 70,18 64,22 66,28 60,24 54,28 56,22 50,18 57,18" fill="#fbbf24" />
+          </svg>
+        </div>
+        <h2>Presidency University</h2>
+        <p style="font-weight:700; color:var(--primary); font-size:0.85rem; margin-top:2px;">Faculty Question Paper
+          Portal • SOIS</p>
+      </div>
+
+      <!-- Auth Tab Toggle -->
+      <div style="display:flex; gap:0.5rem; margin-bottom:1.25rem; border-bottom:2px solid var(--border-color);">
+        <button id="tabLoginBtn" class="tab-btn active" style="flex:1;">🔐 Login</button>
+        <button id="tabRegisterBtn" class="tab-btn" style="flex:1;">📝 New Faculty Registration</button>
+      </div>
+
+      <div id="authMsg" style="font-size:0.8rem; text-align:center; margin-bottom:0.75rem; display:none;"></div>
+
+      <!-- LOGIN FORM -->
+      <form id="loginForm">
+        <div class="form-group" style="margin-bottom: 0.85rem;">
+          <label for="punivIdInput">PUNIV Faculty Code</label>
+          <input type="text" id="punivIdInput" class="form-control" placeholder="e.g. PUNIV02648" required>
+        </div>
+        <div class="form-group" style="margin-bottom: 1.25rem;">
+          <label for="passwordInput">Password</label>
+          <input type="password" id="passwordInput" class="form-control" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">
+          📧 Verify University Mail OTP & Log In
+        </button>
+      </form>
+
+      <!-- REGISTRATION FORM -->
+      <form id="registerForm" style="display: none;">
+        <div class="form-group" style="margin-bottom: 0.75rem;">
+          <label for="regPunivInput">PUNIV Faculty Code</label>
+          <input type="text" id="regPunivInput" class="form-control" placeholder="e.g. PUNIV02648" required>
+        </div>
+        <div class="form-group" style="margin-bottom: 0.75rem;">
+          <label for="regNameInput">Full Name</label>
+          <input type="text" id="regNameInput" class="form-control" placeholder="e.g. Ms. Aswathy N Rajan" required>
+        </div>
+        <div class="form-group" style="margin-bottom: 0.75rem;">
+          <label for="regEmailInput">University Email (@presidencyuniversity.in)</label>
+          <input type="email" id="regEmailInput" class="form-control" placeholder="username@presidencyuniversity.in"
+            required>
+        </div>
+        <div class="form-group" style="margin-bottom: 0.75rem;">
+          <label for="regPhoneInput">📱 Phone Number (for SMS OTP)</label>
+          <input type="tel" id="regPhoneInput" class="form-control" placeholder="e.g. 9876543210">
+        </div>
+        <div class="form-group" style="margin-bottom: 1.25rem;">
+          <label for="regPasswordInput">Create Password</label>
+          <input type="password" id="regPasswordInput" class="form-control" placeholder="Create your password" required>
+        </div>
+        <button type="submit" class="btn btn-success" style="width: 100%; justify-content: center;">
+          📧 Register &amp; Send OTP to Email / Phone
+        </button>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- UNIVERSITY EMAIL OTP VERIFICATION MODAL OVERLAY -->
+  <div id="otpModalOverlay" class="auth-overlay" style="display:none; z-index:10500;">
+    <div class="auth-card" style="max-width:440px;">
+      <div class="auth-header">
+        <div style="font-size:2.5rem; margin-bottom:0.5rem;">📧</div>
+        <h2>University Mail OTP Verification</h2>
+        <p style="font-size:0.82rem; color:var(--text-muted); margin-top:4px;">
+          A 6-digit verification code has been sent to: <br>
+          <b id="otpEmailTarget" style="color:var(--primary); font-size:0.9rem;">user@presidencyuniversity.in</b>
+        </p>
+      </div>
+
+      <div id="otpAlertBox"
+        style="background:#dcfce7; border:1px solid #86efac; color:#166534; padding:0.75rem 1rem; border-radius:8px; font-size:0.82rem; text-align:center; margin-bottom:1rem;">
+        📨 <b>OTP Sent!</b> Check your <b>university email</b> and/or <b>SMS inbox</b>.<br>
+        <span style="font-size:0.75rem; opacity:0.85;">Valid for <b>10 minutes</b>. Didn't receive? Click <b>Resend
+            OTP</b>.</span>
+      </div>
+
+      <form id="otpForm">
+        <div class="form-group" style="margin-bottom: 1.25rem;">
+          <label for="otpCodeInput" style="text-align:center; display:block; font-weight:700;">Enter 6-Digit OTP
+            Code</label>
+          <input type="text" id="otpCodeInput" class="form-control" placeholder="e.g. 492817" maxlength="6"
+            style="text-align:center; font-size:1.5rem; letter-spacing:6px; font-weight:800; padding:0.5rem;" required>
+        </div>
+        <button type="submit" class="btn btn-success"
+          style="width: 100%; justify-content: center; padding:0.65rem; font-size:0.95rem;">
+          ✅ Verify OTP & Access Portal
+        </button>
+        <div style="display:flex; justify-content:space-between; margin-top:0.85rem; font-size:0.8rem;">
+          <button type="button" id="resendOtpBtn" class="btn btn-secondary btn-sm">🔄 Resend OTP</button>
+          <button type="button" id="cancelOtpBtn" class="btn btn-secondary btn-sm">❌ Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- APP HEADER -->
+  <header class="app-header no-print">
+    <div class="brand-container">
+      <div class="brand-logo">PU</div>
+      <div class="brand-title">
+        <h1>Faculty Question Paper Preparation Portal</h1>
+        <p>PRESIDENCY UNIVERSITY BENGALURU • SCHOOL OF INFORMATION SCIENCE</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <div id="userProfileBadge" class="user-badge" style="display:none;">
+        <div style="font-size:0.8rem; font-weight:700;">
+          <span id="userDisplayName">Faculty</span>
+          <span id="userRoleTag" class="user-role-tag role-faculty-tag">FACULTY</span>
+        </div>
+        <button id="logoutBtn" class="btn btn-secondary btn-sm"
+          style="padding:0.2rem 0.5rem; font-size:0.75rem;">Logout</button>
+      </div>
+      <button id="themeToggleBtn" class="btn btn-secondary btn-sm">🌙 Dark Mode</button>
+      <button id="exportDocxBtn" class="btn btn-primary btn-sm">📝 Download DOCX</button>
+      <button id="exportPdfBtn" class="btn btn-success btn-sm">🖨️ Export PDF / Print</button>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="app-container">
+
+    <!-- CONTROL PANEL -->
+    <div class="control-panel no-print">
+
+      <!-- Faculty Info Header -->
+      <section class="panel" style="background: var(--primary-light); border-color: var(--primary);">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div class="form-grid" style="flex:1; margin-right:1rem;">
+            <div class="form-group">
+              <label for="facultyNameInput" style="color:var(--primary);">Faculty Name</label>
+              <input type="text" id="facultyNameInput" class="form-control" placeholder="Faculty Name" readonly>
+            </div>
+            <div class="form-group">
+              <label for="facultyPunivInput" style="color:var(--primary);">PUNIV Code</label>
+              <input type="text" id="facultyPunivInput" class="form-control" placeholder="PUNIV Code" readonly>
+            </div>
+          </div>
+          <button id="submitQpBtn" class="btn btn-success" style="margin-top:1.2rem;">
+            📤 Submit Question Paper to Manager
+          </button>
+        </div>
+      </section>
+
+      <!-- Course & Exam Metadata -->
+      <section class="panel">
+        <div class="panel-header">
+          <h2 class="panel-title">📋 Exam & Course Metadata</h2>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="courseCodeInput">Course Code</label>
+            <input type="text" id="courseCodeInput" class="form-control" placeholder="e.g. CSA4202, CSE1020, SOIS301"
+              value="">
+          </div>
+          <div class="form-group">
+            <label for="courseNameInput">Course Name</label>
+            <input type="text" id="courseNameInput" class="form-control"
+              placeholder="e.g. Advanced Software Engineering" value="">
+          </div>
+          <div class="form-group">
+            <label for="examTitleInput">Exam Title</label>
+            <input type="text" id="examTitleInput" class="form-control"
+              placeholder="e.g. Continuous Assessment Test 1 – SEP 2026" value="">
+          </div>
+          <div class="form-group">
+            <label for="dateInput">Date of Exam</label>
+            <input type="text" id="dateInput" class="form-control" placeholder="e.g. 15-09-2026" value="">
+          </div>
+          <div class="form-group">
+            <label for="semesterInput">Semester</label>
+            <input type="text" id="semesterInput" class="form-control" placeholder="e.g. 4" value="">
+          </div>
+          <div class="form-group">
+            <label for="maxMarksInput">Max Marks</label>
+            <input type="text" id="maxMarksInput" class="form-control" placeholder="e.g. 30" value="">
+          </div>
+          <div class="form-group">
+            <label for="durationInput">Time / Duration</label>
+            <input type="text" id="durationInput" class="form-control" placeholder="e.g. 1 Hour" value="">
+          </div>
+        </div>
+      </section>
+
+      <!-- Quick Bulk Paste Box -->
+      <section class="panel">
+        <div class="panel-header">
+          <h2 class="panel-title">⚡ Quick Paste Questions (Auto-Detects Text, Marks, Bloom's L1-L6 & CO1-CO5)</h2>
+        </div>
+        <div
+          style="background:var(--primary-light); border:1px solid var(--primary); padding:0.75rem 1rem; border-radius:8px; margin-bottom:0.85rem; font-size:0.8rem; color:var(--text-color);">
+          <div style="font-weight:700; color:var(--primary); margin-bottom:0.25rem;">💡 Auto-Detection Format Example
+            (Paste from Word / Notepad):</div>
+          <code
+            style="display:block; background:var(--card-bg); padding:0.5rem; border-radius:6px; font-family:monospace; line-height:1.4;">
+            1. Define Database Management System concepts. [2 Marks, L1, CO1]<br>
+            2. Explain 3-Schema Architecture with diagram. (2 Marks, L2, CO1)<br>
+            PART B<br>
+            6. Analyze relational schema design for e-commerce website. [10 Marks, L4, CO3]
+          </code>
+        </div>
+        <div class="paste-container">
+          <textarea id="pasteArea" class="paste-area" style="min-height:120px;" placeholder="Paste questions directly from Word/Notepad...
+Example:
+1. Define DBMS and list key advantages [2 Marks, L1, CO1]
+2. Explain Data Independence with examples [2 Marks, L2, CO1]
+PART B
+6. Draw ER Diagram for University Database [10 Marks, L3, CO1]"></textarea>
+          <div class="paste-actions" style="margin-top:0.5rem;">
+            <span class="text-muted" style="font-size: 0.78rem;">⚡ Auto-populates Question Text, Marks, Bloom's (L1-L6)
+              and COs (CO1-CO5) into Part A & Part B!</span>
+            <button id="parseBtn" class="btn btn-accent btn-sm" style="padding:0.45rem 0.85rem; font-weight:700;">✨
+              Parse & Auto-Fill Question Cards</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Question Paper Sets Tabs & Rich Question Builder -->
+      <section class="panel">
+        <div class="tabs-header">
+          <button class="tab-btn set-tab active" data-set="SET A">SET A</button>
+          <button class="tab-btn set-tab" data-set="SET B">SET B</button>
+          <button class="tab-btn set-tab" data-set="SET C">SET C</button>
+        </div>
+
+        <!-- Part A Section -->
+        <div style="margin-bottom: 1.5rem;">
+          <h3 style="font-size: 0.92rem; font-weight: 700; margin-bottom: 0.75rem; color: var(--primary);">
+            Part A (Answer ALL Questions • 5 x 2M = 10 Marks)
+          </h3>
+          <div id="partAContainer"></div>
+        </div>
+
+        <!-- Part B Section -->
+        <div>
+          <h3 style="font-size: 0.92rem; font-weight: 700; margin-bottom: 0.75rem; color: var(--primary);">
+            Part B (Answer Any Two Questions • 2 x 10M = 20 Marks)
+          </h3>
+          <div id="partBContainer"></div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- RIGHT PANEL: Live Document PDF/Print Preview -->
+    <div class="preview-panel" id="previewPanel">
+      <div class="preview-wrapper">
+        <div class="preview-paper" id="printableArea">
+
+          <div style="position: relative;">
+            <div class="qp-set-badge" id="prevSetBadge">SET A</div>
+            <div class="qp-header-title">PRESIDENCY UNIVERSITY BENGALURU</div>
+            <div class="qp-school-title">SCHOOL OF INFORMATION SCIENCE</div>
+          </div>
+
+          <!-- Metadata Header Table -->
+          <table class="qp-table qp-meta-table">
+            <tr>
+              <td colspan="3" class="text-center font-bold" id="prevTitle">Continuous Assessment Test 1 – SEP 2026</td>
+            </tr>
+            <tr>
+              <td style="width: 30%;"><b>Course Code:</b> <span id="prevCourseCode">CSA2503</span></td>
+              <td style="width: 45%;"><b>Course Name:</b> <span id="prevCourseName">Relational Database Management
+                  Systems</span></td>
+              <td style="width: 25%;"><b>Date:</b> <span id="prevDate">15-09-2026</span></td>
+            </tr>
+            <tr>
+              <td><b>Semester:</b> <span id="prevSem">3</span></td>
+              <td><b>Max Marks:</b> <span id="prevMaxMarks">30</span> Marks</td>
+              <td><b>Time:</b> <span id="prevTime">1 Hour</span></td>
+            </tr>
+          </table>
+
+          <!-- Part A Section -->
+          <div class="qp-part-title">
+            <span>Part A: Answer ALL the Questions. Each question carries 2 marks.</span>
+            <span class="text-right">5Q x 2M=10M</span>
+          </div>
+
+          <table class="qp-table">
+            <thead>
+              <tr style="background-color: #fafafa;">
+                <th style="width: 7%;" class="text-center">Q.No</th>
+                <th style="width: 67%;">Question Text</th>
+                <th style="width: 12%;" class="text-center">Marks</th>
+                <th style="width: 7%;" class="text-center">L</th>
+                <th style="width: 7%;" class="text-center">CO</th>
+              </tr>
+            </thead>
+            <tbody id="prevPartATableBody"></tbody>
+          </table>
+
+          <!-- Part B Section -->
+          <div class="qp-part-title">
+            <span>Part B: Answer any two of the Questions.</span>
+            <span class="text-right">2Qx 10M = 20M</span>
+          </div>
+
+          <table class="qp-table">
+            <thead>
+              <tr style="background-color: #fafafa;">
+                <th style="width: 7%;" class="text-center">Q.No</th>
+                <th style="width: 67%;">Question Text</th>
+                <th style="width: 12%;" class="text-center">Marks</th>
+                <th style="width: 7%;" class="text-center">L</th>
+                <th style="width: 7%;" class="text-center">CO</th>
+              </tr>
+            </thead>
+            <tbody id="prevPartBTableBody"></tbody>
+          </table>
+
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer Portal Links -->
+  <footer
+    style="background:var(--surface-color, #fff); border-top:2px solid var(--border-color, #e2e8f0); padding:1.25rem 2rem; display:flex; align-items:center; justify-content:center; gap:1.5rem; flex-wrap:wrap; font-family:'Inter',sans-serif;"
+    class="no-print">
+    <span style="font-size:0.85rem; font-weight:600; color:var(--text-muted,#64748b);">&#127963; SOIS QP Management
+      System &mdash; Quick Access:</span>
+    <a href="faculty.html"
+      style="display:inline-flex; align-items:center; gap:0.5rem; background:#1e3a8a; color:#fff; text-decoration:none; padding:0.5rem 1.25rem; border-radius:8px; font-weight:700; font-size:0.88rem;"
+      onmouseover="this.style.background='#1d4ed8'" onmouseout="this.style.background='#1e3a8a'">&#128100; Faculty
+      Portal</a>
+    <a href="manager.html"
+      style="display:inline-flex; align-items:center; gap:0.5rem; background:#065f46; color:#fff; text-decoration:none; padding:0.5rem 1.25rem; border-radius:8px; font-weight:700; font-size:0.88rem;"
+      onmouseover="this.style.background='#047857'" onmouseout="this.style.background='#065f46'">&#128081; Manager
+      Portal</a>
+    <a href="index.html"
+      style="display:inline-flex; align-items:center; gap:0.5rem; background:#374151; color:#fff; text-decoration:none; padding:0.5rem 1.25rem; border-radius:8px; font-weight:700; font-size:0.88rem;"
+      onmouseover="this.style.background='#1f2937'" onmouseout="this.style.background='#374151'">&#127968; Home</a>
+  </footer>
+
+  <script src="js/config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script>if (window.emailjs && window.SOIS_CONFIG) emailjs.init({ publicKey: window.SOIS_CONFIG.EMAILJS_PUBLIC_KEY });</script>
+  <script src="js/store.js"></script>
+  <script src="js/qp-builder.js"></script>
+  <script src="js/docx-exporter.js"></script>
+  <script src="js/faculty.js"></script>
+</body>
+
+</html>
