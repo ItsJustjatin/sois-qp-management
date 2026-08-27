@@ -94,8 +94,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (activeBtn) { activeBtn.disabled = false; activeBtn.textContent = activeBtn.closest('#loginForm') ? '📧 Verify & Log In' : '📧 Register & Send OTP'; }
 
     if (!otpRes.success && !otpRes.devMode) {
-      authMsg.textContent = otpRes.message || 'Could not send OTP. Please check your email and try again.';
-      authMsg.style.color = 'var(--danger)';
+      authMsg.innerHTML =
+        `<b>⚠️ Could not send OTP email.</b><br>` +
+        `${otpRes.message || 'Email delivery failed.'}<br><br>` +
+        `<span style="font-size:0.77rem;">` +
+        `Please ensure you entered a valid <b>@presidencyuniversity.in</b> email, then try again.<br>` +
+        `If the problem persists, contact the manager: <b>Mr. Jatin</b> ` +
+        `(<a href="mailto:jatin@presidencyuniversity.in" style="color:inherit;">jatin@presidencyuniversity.in</a>).` +
+        `</span>`;
+      authMsg.style.background = '#fee2e2';
+      authMsg.style.color = '#991b1b';
+      authMsg.style.padding = '0.6rem 0.8rem';
+      authMsg.style.borderRadius = '8px';
       authMsg.style.display = 'block';
       return;
     }
@@ -272,7 +282,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Submit Question Paper to Manager
-  submitQpBtn.addEventListener('click', () => {
+  submitQpBtn.addEventListener('click', async () => {
     const meta = getMetadata();
     if (!meta.courseCode || meta.courseCode === 'COURSE CODE') {
       alert('Please enter a valid Course Code before submitting.');
@@ -289,8 +299,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const punivId = facultyPunivInput.value.trim() || store.getSavedAuth()?.punivId || 'PUNIV';
     const currentData = builder.setsData[builder.currentSet];
 
+    // Use a longer, more unique ID to avoid collisions between multiple faculty
+    const uniqueId = `QP-${punivId.slice(-4)}-${Date.now().toString().slice(-6)}`;
+
     const submissionObj = {
-      id: `QP-${Date.now().toString().slice(-4)}`,
+      id: uniqueId,
       punivId: punivId,
       facultyName: facultyName,
       courseCode: meta.courseCode,
@@ -303,8 +316,35 @@ document.addEventListener('DOMContentLoaded', () => {
       partB: JSON.parse(JSON.stringify(currentData.partB))
     };
 
-    store.addSubmission(submissionObj);
-    alert(`🎉 Success! Question Paper for ${meta.courseCode} (${meta.courseName} - ${builder.currentSet}) submitted successfully by ${facultyName} [${punivId}]!\nIt has been sent directly to the Manager's Scrutiny Portal.`);
+    // Disable button while saving to cloud
+    submitQpBtn.disabled = true;
+    submitQpBtn.textContent = '⏳ Submitting to Manager Portal...';
+
+    try {
+      const result = await store.addSubmission(submissionObj);
+
+      if (result && result.cloudSaved === false && !result.localOnly) {
+        // Cloud save failed but local save succeeded
+        alert(
+          `⚠️ Submission saved locally but could NOT be sent to the cloud server.\n\n` +
+          `The manager may NOT see your question paper until the connection is restored.\n\n` +
+          `Please try submitting again in a few minutes, or contact the administrator.\n\n` +
+          `Paper ID: ${uniqueId}`
+        );
+      } else {
+        alert(
+          `🎉 Success! Question Paper for ${meta.courseCode} (${meta.courseName} - ${builder.currentSet}) ` +
+          `submitted successfully by ${facultyName} [${punivId}]!\n` +
+          `It has been sent directly to the Manager's Scrutiny Portal.\n\n` +
+          `Paper ID: ${uniqueId}`
+        );
+      }
+    } catch (e) {
+      alert(`❌ An unexpected error occurred during submission. Please try again.\n\nError: ${e.message}`);
+    } finally {
+      submitQpBtn.disabled = false;
+      submitQpBtn.textContent = '📤 Submit Question Paper to Manager';
+    }
   });
 
   exportDocxBtn.addEventListener('click', () => {

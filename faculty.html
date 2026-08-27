@@ -44,10 +44,12 @@
         <button id="tabRegisterBtn" class="tab-btn" style="flex:1;">📝 New Faculty Registration</button>
       </div>
 
-      <div id="authMsg" style="font-size:0.8rem; text-align:center; margin-bottom:0.75rem; display:none;"></div>
+      <div id="authMsg"
+        style="font-size:0.8rem; text-align:center; margin-bottom:0.75rem; display:none; padding:0.5rem 0.75rem; border-radius:6px;">
+      </div>
 
       <!-- LOGIN FORM -->
-      <form id="loginForm">
+      <form id="loginForm" data-role="faculty">
         <div class="form-group" style="margin-bottom: 0.85rem;">
           <label for="punivIdInput">PUNIV Faculty Code</label>
           <input type="text" id="punivIdInput" class="form-control" placeholder="e.g. PUNIV02648" required>
@@ -57,12 +59,16 @@
           <input type="password" id="passwordInput" class="form-control" placeholder="••••••••" required>
         </div>
         <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">
-          📧 Verify University Mail OTP & Log In
+          📧 Verify University Mail OTP &amp; Log In
         </button>
+        <div
+          style="margin-top:0.85rem; background:#dbeafe; border:1px solid #93c5fd; color:#1e40af; padding:0.55rem 0.75rem; border-radius:8px; font-size:0.78rem; text-align:center;">
+          🆕 <b>First time here?</b> Click the <b>📝 New Faculty Registration</b> tab above to create your account.
+        </div>
       </form>
 
       <!-- REGISTRATION FORM -->
-      <form id="registerForm" style="display: none;">
+      <form id="registerForm" data-role="faculty" style="display: none;">
         <div class="form-group" style="margin-bottom: 0.75rem;">
           <label for="regPunivInput">PUNIV Faculty Code</label>
           <input type="text" id="regPunivInput" class="form-control" placeholder="e.g. PUNIV02648" required>

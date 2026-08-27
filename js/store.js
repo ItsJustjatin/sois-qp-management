@@ -10,7 +10,24 @@ window.SOIS_STORE = {
   get cfg() { return window.SOIS_CONFIG || {}; },
 
   // Active OTP Memory Store (in-browser, per session)
-  activeOTPs: {},
+  // Active OTP Memory Store — also mirrored in sessionStorage to survive page reloads
+  get activeOTPs() {
+    try { return JSON.parse(sessionStorage.getItem('SOIS_ACTIVE_OTPS') || '{}'); } catch (e) { return {}; }
+  },
+  _setOTP(email, record) {
+    try {
+      const otps = this.activeOTPs;
+      otps[email] = record;
+      sessionStorage.setItem('SOIS_ACTIVE_OTPS', JSON.stringify(otps));
+    } catch (e) { }
+  },
+  _clearOTP(email) {
+    try {
+      const otps = this.activeOTPs;
+      delete otps[email];
+      sessionStorage.setItem('SOIS_ACTIVE_OTPS', JSON.stringify(otps));
+    } catch (e) { }
+  },
 
   // Pre-configured Manager Account
   defaultUsers: [
@@ -180,11 +197,11 @@ window.SOIS_STORE = {
 
     // Generate 6-digit OTP
     const code = Math.floor(100000 + Math.random() * 900000).toString();
-    this.activeOTPs[cleanEmail] = {
+    this._setOTP(cleanEmail, {
       code,
       createdAt: Date.now(),
       expiresAt: Date.now() + 10 * 60 * 1000  // 10 minutes
-    };
+    });
 
     const cfg = this.cfg;
     let emailSent = false;
@@ -199,8 +216,16 @@ window.SOIS_STORE = {
           cfg.EMAILJS_SERVICE_ID,
           cfg.EMAILJS_TEMPLATE_ID,
           {
-            to_email: cleanEmail, to_name: name, otp_code: code,
-            university: 'Presidency University Bengaluru', dept: 'SOIS'
+            // Support both common EmailJS template variable naming conventions
+            to_email: cleanEmail,
+            email: cleanEmail,
+            to_name: name,
+            name: name,
+            otp_code: code,
+            otp: code,
+            message: `Your SOIS QP Portal OTP is: ${code}. Valid for 10 minutes.`,
+            university: 'Presidency University Bengaluru',
+            dept: 'SOIS'
           },
           cfg.EMAILJS_PUBLIC_KEY
         );
@@ -264,12 +289,12 @@ window.SOIS_STORE = {
     const record = this.activeOTPs[cleanEmail];
     if (!record) return { success: false, message: 'No OTP found for this email. Please request a new OTP.' };
     if (Date.now() > record.expiresAt) {
-      delete this.activeOTPs[cleanEmail];
+      this._clearOTP(cleanEmail);
       return { success: false, message: 'OTP has expired (10 minutes). Please request a new one.' };
     }
     if (record.code !== inputCode) return { success: false, message: 'Incorrect OTP. Please check and try again.' };
 
-    delete this.activeOTPs[cleanEmail];
+    this._clearOTP(cleanEmail);
     return { success: true, message: 'OTP verified successfully!' };
   },
 
@@ -285,6 +310,7 @@ window.SOIS_STORE = {
 
   async getSubmissionsAsync() {
     let cloudList = [];
+    let cloudFetchOk = false;
 
     // Fetch from Supabase
     if (this._supaReady()) {
@@ -296,13 +322,26 @@ window.SOIS_STORE = {
         if (res.ok) {
           const rows = await res.json();
           cloudList = rows.map(r => ({ ...r.data, _supaId: r.id }));
+          cloudFetchOk = true;
+        } else {
+          const errText = await res.text();
+          console.warn('[SOIS] Supabase fetch failed:', res.status, errText);
         }
-      } catch (e) { console.warn('Supabase fetch warn:', e); }
+      } catch (e) {
+        console.warn('[SOIS] Supabase fetch error (offline?):', e.message);
+      }
     }
 
-    // Merge local cache (handles offline submissions)
+    // Merge local cache (handles offline/cross-device submissions)
+    // If cloud fetch succeeded, prefer cloud data; otherwise fall back to cached
     const cached = this.getSubmissions();
-    cached.forEach(c => { if (!cloudList.find(s => s.id === c.id)) cloudList.push(c); });
+    if (cloudFetchOk) {
+      // Add any locally-cached items not yet synced to cloud
+      cached.forEach(c => { if (!cloudList.find(s => s.id === c.id)) cloudList.push(c); });
+    } else {
+      // Cloud unreachable — use full local cache
+      cloudList = cached;
+    }
 
     cloudList.sort((a, b) => new Date(b.submittedAt || 0) - new Date(a.submittedAt || 0));
     this.saveSubmissions(cloudList);
@@ -310,22 +349,39 @@ window.SOIS_STORE = {
   },
 
   addSubmission(sub) {
+    // Save locally first (instant, offline-safe)
     const list = this.getSubmissions();
     const existing = list.findIndex(s => s.id === sub.id);
     if (existing !== -1) list[existing] = sub; else list.unshift(sub);
     this.saveSubmissions(list);
 
-    // Upsert to Supabase
+    // Upsert to Supabase (async) — returns a Promise so callers can check cloud save status
     if (this._supaReady()) {
-      fetch(this._supa('submissions'), {
+      return fetch(this._supa('submissions'), {
         method: 'POST',
-        headers: this._supaHeaders({ 'Prefer': 'resolution=merge-duplicates,return=minimal' }),
+        headers: this._supaHeaders({
+          // 'resolution=merge-duplicates' tells PostgREST to upsert on the PK
+          // 'On-Conflict' explicitly names the conflict column(s)
+          'Prefer': 'resolution=merge-duplicates,return=representation',
+          'On-Conflict': 'id'
+        }),
         body: JSON.stringify({ id: sub.id, data: sub })
-      }).then(r => { if (!r.ok) r.text().then(t => console.error('Supabase upsert err:', t)); })
-        .catch(e => console.error('Supabase err:', e));
+      }).then(async r => {
+        if (!r.ok) {
+          const errText = await r.text();
+          console.error('[SOIS] Supabase upsert failed:', r.status, errText);
+          return { success: false, cloudSaved: false, error: errText };
+        }
+        console.log('[SOIS] Question paper saved to cloud successfully:', sub.id);
+        return { success: true, cloudSaved: true };
+      }).catch(e => {
+        console.error('[SOIS] Supabase network error:', e.message);
+        return { success: false, cloudSaved: false, error: e.message };
+      });
     }
 
-    return sub;
+    // Supabase not configured — local only
+    return Promise.resolve({ success: true, cloudSaved: false, localOnly: true });
   },
 
   updateStatus(id, newStatus, managerNote = '') {
