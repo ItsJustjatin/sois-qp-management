@@ -8,6 +8,7 @@ window.SOIS_CONFIG = {
     // ─── SUPABASE (Cloud Database) ────────────────────────────────────────────
     // Sign up free at: https://supabase.com
     // Get these from: Project Settings → API
+
     SUPABASE_URL: 'https://cwrdmarlmwmitwpmztdh.supabase.co',        // e.g. https://abcxyz.supabase.co
     SUPABASE_ANON: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN3cmRtYXJsbXdtaXR3cG16dGRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyODQ5MzQsImV4cCI6MjEwMjg2MDkzNH0.h_ytyR8vw-6Qcefn7W_t8ywSoDAUVSuqGHVSls7HKPcRE',   // long JWT starting with eyJ...
 

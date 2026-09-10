@@ -39,6 +39,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const courseFilterSelect = document.getElementById('courseFilterSelect');
   const searchInput = document.getElementById('searchInput');
   const submissionsTableBody = document.getElementById('submissionsTableBody');
+  const manualRefreshBtn = document.getElementById('manualRefreshBtn');
+  const lastRefreshedLabel = document.getElementById('lastRefreshedLabel');
 
   // Modal Elements
   const paperModal = document.getElementById('paperModal');
@@ -297,7 +299,11 @@ document.addEventListener('DOMContentLoaded', () => {
       return true;
     });
 
-    submissionsTableBody.innerHTML = '';
+    submissionsTableBody.textContent = '';
+    if (lastRefreshedLabel) {
+      const now = new Date().toLocaleTimeString();
+      lastRefreshedLabel.textContent = `Last refreshed: ${now}`;
+    }
 
     if (filtered.length === 0) {
       submissionsTableBody.innerHTML = `
@@ -406,6 +412,16 @@ document.addEventListener('DOMContentLoaded', () => {
   // Filter Action Listeners
   if (statusFilterSelect) statusFilterSelect.addEventListener('change', renderDashboard);
   if (searchInput) searchInput.addEventListener('input', renderDashboard);
+  if (manualRefreshBtn) {
+    manualRefreshBtn.addEventListener('click', () => {
+      manualRefreshBtn.disabled = true;
+      manualRefreshBtn.textContent = '⏳ Refreshing...';
+      renderDashboard().finally(() => {
+        manualRefreshBtn.disabled = false;
+        manualRefreshBtn.textContent = '🔄 Refresh';
+      });
+    });
+  }
 
   // Open Inspection & Decision Modal
   function openPaperModal(id) {
