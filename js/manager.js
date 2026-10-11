@@ -518,12 +518,16 @@ document.addEventListener('DOMContentLoaded', () => {
     `).join('');
 
     paperContentPreview.innerHTML = `
-      <div class="qp-school-title">
-        SCHOOL OF INFORMATION SCIENCE
-        <span class="qp-set-badge">${sub.setName || 'SET A'}</span>
+      <div style="text-align: center; margin-bottom: 10px;">
+        <img src="images/presidency_logo.png" alt="Presidency University" class="qp-logo-img">
+        <div class="qp-header-title">PRESIDENCY UNIVERSITY BENGALURU</div>
+        <div class="qp-school-title">
+          SCHOOL OF INFORMATION SCIENCE
+          <span class="qp-set-badge">${sub.setName || 'SET A'}</span>
+        </div>
       </div>
 
-      <div class="qp-header-title" style="margin-bottom: 14px;">
+      <div class="qp-header-title" style="margin-bottom: 14px; font-size:11.5pt;">
         ${meta.examTitle || 'CONTINUOUS ASSESSMENT TEST'}
       </div>
 

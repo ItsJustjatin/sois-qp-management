@@ -22,10 +22,7 @@ if (!fs.existsSync(SUBMISSIONS_FILE)) {
 }
 
 if (!fs.existsSync(USERS_FILE)) {
-  const defaultUsers = [
-    { punivId: 'PUNIV02694', name: 'Mr. Jatin', role: 'manager', designation: 'Manager / Course In-Charge', department: 'SOIS', password: 'password123', email: 'jatin@presidencyuniversity.in' }
-  ];
-  fs.writeFileSync(USERS_FILE, JSON.stringify(defaultUsers));
+  fs.writeFileSync(USERS_FILE, JSON.stringify([]));
 }
 
 function readJson(filePath) {
@@ -88,7 +85,7 @@ const server = http.createServer((req, res) => {
       try {
         const newSub = JSON.parse(body);
         const submissions = readJson(SUBMISSIONS_FILE);
-        
+
         // Remove existing duplicate ID if re-submitted
         const existingIdx = submissions.findIndex(s => s.id === newSub.id);
         if (existingIdx !== -1) {
@@ -99,7 +96,7 @@ const server = http.createServer((req, res) => {
 
         writeJson(SUBMISSIONS_FILE, submissions);
         console.log(`[API] New paper submitted: ${newSub.id} - ${newSub.courseCode} by ${newSub.facultyName}`);
-        
+
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: true, message: 'Question Paper saved to Central Server!', submission: newSub }));
       } catch (err) {

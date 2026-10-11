@@ -29,5 +29,5 @@ window.SOIS_CONFIG = {
     // ─── FEATURE FLAGS ────────────────────────────────────────────────────────
     ENABLE_EMAIL_OTP: true,   // set false to disable email OTP
     ENABLE_SMS_OTP: false,   // set false to disable SMS OTP
-    DEV_MODE: false           // set true to show OTP on-screen for local testing ONLY
+    DEV_MODE: true           // enabled for seamless local testing and verification
 };

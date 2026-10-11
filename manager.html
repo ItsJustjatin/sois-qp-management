@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Manager Portal - SOIS Question Paper Management System</title>
+  <link rel="icon" type="image/png" href="images/presidency_logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -99,19 +100,8 @@
   <div id="authOverlay" class="auth-overlay">
     <div class="auth-card">
       <div class="auth-header">
-        <div class="auth-logo"
-          style="background:none; box-shadow:none; padding:0; width:76px; height:76px; margin:0 auto 0.75rem auto;">
-          <svg width="76" height="76" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="60" cy="60" r="56" fill="#1e3a8a" stroke="#d97706" stroke-width="4" />
-            <path d="M60 20 L85 35 V60 C85 78 60 92 60 92 C60 92 35 78 35 60 V35 Z" fill="#1d4ed8" stroke="#f59e0b"
-              stroke-width="3" />
-            <path d="M60 25 L80 38 V58 C80 73 60 85 60 85 C60 85 40 73 40 58 V38 Z" fill="#0f172a" />
-            <text x="60" y="58" font-family="'Outfit', sans-serif" font-weight="800" font-size="22" fill="#fbbf24"
-              text-anchor="middle">PU</text>
-            <text x="60" y="74" font-family="'Inter', sans-serif" font-weight="700" font-size="9" fill="#ffffff"
-              text-anchor="middle">SOIS</text>
-            <polygon points="60,12 63,18 70,18 64,22 66,28 60,24 54,28 56,22 50,18 57,18" fill="#fbbf24" />
-          </svg>
+        <div class="auth-logo">
+          <img src="images/presidency_logo.png" alt="Presidency University Emblem" class="auth-logo-img">
         </div>
         <h2>Presidency University</h2>
         <p style="font-weight:700; color:var(--primary); font-size:0.85rem; margin-top:2px;">Manager Scrutiny & Review
@@ -152,11 +142,11 @@
         </div>
         <div class="form-group" style="margin-bottom: 0.75rem;">
           <label for="regNameInput">Manager Full Name</label>
-          <input type="text" id="regNameInput" class="form-control" placeholder="e.g. Mr. Jatin" required>
+          <input type="text" id="regNameInput" class="form-control" placeholder="e.g. Dr. Rajesh Kumar" required>
         </div>
         <div class="form-group" style="margin-bottom: 0.75rem;">
           <label for="regEmailInput">University Email (@presidencyuniversity.in)</label>
-          <input type="email" id="regEmailInput" class="form-control" placeholder="jatin@presidencyuniversity.in"
+          <input type="email" id="regEmailInput" class="form-control" placeholder="rajesh@presidencyuniversity.in"
             required>
         </div>
         <div class="form-group" style="margin-bottom: 0.75rem;">
@@ -184,7 +174,7 @@
         <h2>University Mail OTP Verification</h2>
         <p style="font-size:0.82rem; color:var(--text-muted); margin-top:4px;">
           A 6-digit verification code has been sent to: <br>
-          <b id="otpEmailTarget" style="color:var(--primary); font-size:0.9rem;">jatin@presidencyuniversity.in</b>
+          <b id="otpEmailTarget" style="color:var(--primary); font-size:0.9rem;">manager@presidencyuniversity.in</b>
         </p>
       </div>
 
@@ -217,7 +207,9 @@
   <!-- APP HEADER -->
   <header class="app-header no-print">
     <div class="brand-container">
-      <div class="brand-logo" style="background: linear-gradient(135deg, #1e3a8a, #7c3aed);">👑</div>
+      <div class="brand-logo">
+        <img src="images/presidency_logo.png" alt="Presidency University" class="brand-logo-img">
+      </div>
       <div class="brand-title">
         <h1>Manager Review & Approval Portal</h1>
         <p>PRESIDENCY UNIVERSITY BENGALURU • SCHOOL OF INFORMATION SCIENCE</p>
@@ -415,6 +407,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script>if (window.emailjs && window.SOIS_CONFIG) emailjs.init({ publicKey: window.SOIS_CONFIG.EMAILJS_PUBLIC_KEY });</script>
   <script src="js/store.js"></script>
+  <script src="js/logo-data.js"></script>
   <script src="js/docx-exporter.js"></script>
   <script src="js/manager.js"></script>
 </body>

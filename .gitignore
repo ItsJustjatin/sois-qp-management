@@ -1,2 +1,16 @@
 # Local Netlify folder
 .netlify
+
+# Node.js dependencies
+node_modules/
+
+# Test scripts (not needed in production)
+test_e2e.js
+
+# Environment secrets (if added later)
+.env
+.env.local
+
+# OS files
+.DS_Store
+Thumbs.db

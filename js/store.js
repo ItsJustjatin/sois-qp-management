@@ -29,14 +29,22 @@ window.SOIS_STORE = {
     } catch (e) { }
   },
 
-  // Pre-configured Manager Account
-  defaultUsers: [
-    {
-      punivId: 'PUNIV02694', name: 'Mr. Jatin', role: 'manager',
-      designation: 'Manager / Course In-Charge', department: 'SOIS',
-      password: 'password123', email: 'jatin@presidencyuniversity.in', phone: ''
-    }
-  ],
+  // Storage Cleanup & Reset Guard
+  _ensureCleanStorage() {
+    try {
+      const VERSION = 'sois_clean_v3';
+      if (localStorage.getItem('SOIS_STORAGE_VER') !== VERSION) {
+        localStorage.removeItem('SOIS_USERS');
+        localStorage.removeItem('SOIS_AUTH_USER');
+        localStorage.removeItem('SOIS_QP_SUBMISSIONS');
+        sessionStorage.removeItem('SOIS_ACTIVE_OTPS');
+        localStorage.setItem('SOIS_STORAGE_VER', VERSION);
+      }
+    } catch (e) { }
+  },
+
+  // Default accounts (empty for clean state - users register fresh via portal)
+  defaultUsers: [],
 
   bloomsLevels: [
     { code: 'L1', label: 'L1 - Remember' }, { code: 'L2', label: 'L2 - Understand' },
@@ -89,8 +97,9 @@ window.SOIS_STORE = {
     return url.startsWith('http') && anon.startsWith('eyJ');
   },
 
-  // ── Users (localStorage + Supabase) ──────────────────────────────────────
+  // ── Users (localStorage + Server API + Supabase) ────────────────────────
   getUsers() {
+    this._ensureCleanStorage();
     try {
       const data = localStorage.getItem('SOIS_USERS');
       if (data) return JSON.parse(data);
@@ -100,6 +109,17 @@ window.SOIS_STORE = {
 
   saveUsers(users) {
     try { localStorage.setItem('SOIS_USERS', JSON.stringify(users)); } catch (e) { }
+    // Sync with Central Server API
+    try {
+      users.forEach(u => {
+        fetch('/api/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(u)
+        }).catch(() => { });
+      });
+    } catch (e) { }
+
     // Sync each user to Supabase
     if (!this._supaReady()) return;
     users.forEach(u => {
@@ -120,16 +140,25 @@ window.SOIS_STORE = {
   },
 
   async getUsersAsync() {
+    this._ensureCleanStorage();
+    // Try Central Server API first
+    try {
+      const apiRes = await fetch('/api/users');
+      if (apiRes.ok) {
+        const serverUsers = await apiRes.json();
+        if (Array.isArray(serverUsers)) {
+          localStorage.setItem('SOIS_USERS', JSON.stringify(serverUsers));
+          return serverUsers;
+        }
+      }
+    } catch (e) { }
+
     if (!this._supaReady()) return this.getUsers();
     try {
       const res = await fetch(this._supa('users'), { headers: this._supaHeaders() });
       if (res.ok) {
         const rows = await res.json();
         const users = rows.map(r => r.data);
-        // Merge with default manager
-        this.defaultUsers.forEach(def => {
-          if (!users.find(u => u.punivId === def.punivId)) users.unshift(def);
-        });
         localStorage.setItem('SOIS_USERS', JSON.stringify(users));
         return users;
       }
@@ -298,8 +327,9 @@ window.SOIS_STORE = {
     return { success: true, message: 'OTP verified successfully!' };
   },
 
-  // ── Submissions (localStorage + Supabase) ─────────────────────────────────
+  // ── Submissions (localStorage + Server API + Supabase) ───────────────────
   getSubmissions() {
+    this._ensureCleanStorage();
     try { const d = localStorage.getItem('SOIS_QP_SUBMISSIONS'); if (d) return JSON.parse(d); } catch (e) { }
     return [];
   },
@@ -309,11 +339,24 @@ window.SOIS_STORE = {
   },
 
   async getSubmissionsAsync() {
+    this._ensureCleanStorage();
     let cloudList = [];
     let cloudFetchOk = false;
 
-    // Fetch from Supabase
-    if (this._supaReady()) {
+    // Try Central Server API first
+    try {
+      const apiRes = await fetch('/api/submissions');
+      if (apiRes.ok) {
+        const serverSubs = await apiRes.json();
+        if (Array.isArray(serverSubs)) {
+          cloudList = serverSubs;
+          cloudFetchOk = true;
+        }
+      }
+    } catch (e) { }
+
+    // Fall back to Supabase if local API was not reachable
+    if (!cloudFetchOk && this._supaReady()) {
       try {
         const res = await fetch(
           this._supa('submissions') + '?order=created_at.desc',
@@ -323,23 +366,15 @@ window.SOIS_STORE = {
           const rows = await res.json();
           cloudList = rows.map(r => ({ ...r.data, _supaId: r.id }));
           cloudFetchOk = true;
-        } else {
-          const errText = await res.text();
-          console.warn('[SOIS] Supabase fetch failed:', res.status, errText);
         }
-      } catch (e) {
-        console.warn('[SOIS] Supabase fetch error (offline?):', e.message);
-      }
+      } catch (e) { }
     }
 
-    // Merge local cache (handles offline/cross-device submissions)
-    // If cloud fetch succeeded, prefer cloud data; otherwise fall back to cached
+    // Merge local cache
     const cached = this.getSubmissions();
     if (cloudFetchOk) {
-      // Add any locally-cached items not yet synced to cloud
       cached.forEach(c => { if (!cloudList.find(s => s.id === c.id)) cloudList.push(c); });
     } else {
-      // Cloud unreachable — use full local cache
       cloudList = cached;
     }
 
@@ -348,40 +383,44 @@ window.SOIS_STORE = {
     return cloudList;
   },
 
-  addSubmission(sub) {
+  async addSubmission(sub) {
     // Save locally first (instant, offline-safe)
     const list = this.getSubmissions();
     const existing = list.findIndex(s => s.id === sub.id);
     if (existing !== -1) list[existing] = sub; else list.unshift(sub);
     this.saveSubmissions(list);
 
-    // Upsert to Supabase (async) — returns a Promise so callers can check cloud save status
-    if (this._supaReady()) {
-      return fetch(this._supa('submissions'), {
+    let serverSaved = false;
+    // Sync to Central Server API
+    try {
+      const apiRes = await fetch('/api/submit', {
         method: 'POST',
-        headers: this._supaHeaders({
-          // 'resolution=merge-duplicates' tells PostgREST to upsert on the PK
-          // 'On-Conflict' explicitly names the conflict column(s)
-          'Prefer': 'resolution=merge-duplicates,return=representation',
-          'On-Conflict': 'id'
-        }),
-        body: JSON.stringify({ id: sub.id, data: sub })
-      }).then(async r => {
-        if (!r.ok) {
-          const errText = await r.text();
-          console.error('[SOIS] Supabase upsert failed:', r.status, errText);
-          return { success: false, cloudSaved: false, error: errText };
-        }
-        console.log('[SOIS] Question paper saved to cloud successfully:', sub.id);
-        return { success: true, cloudSaved: true };
-      }).catch(e => {
-        console.error('[SOIS] Supabase network error:', e.message);
-        return { success: false, cloudSaved: false, error: e.message };
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sub)
       });
+      if (apiRes.ok) {
+        serverSaved = true;
+      }
+    } catch (e) { }
+
+    // Upsert to Supabase (if ready)
+    if (this._supaReady()) {
+      try {
+        const r = await fetch(this._supa('submissions'), {
+          method: 'POST',
+          headers: this._supaHeaders({
+            'Prefer': 'resolution=merge-duplicates,return=representation',
+            'On-Conflict': 'id'
+          }),
+          body: JSON.stringify({ id: sub.id, data: sub })
+        });
+        if (r.ok) {
+          return { success: true, cloudSaved: true };
+        }
+      } catch (e) { }
     }
 
-    // Supabase not configured — local only
-    return Promise.resolve({ success: true, cloudSaved: false, localOnly: true });
+    return { success: true, cloudSaved: serverSaved, localOnly: !serverSaved };
   },
 
   updateStatus(id, newStatus, managerNote = '') {
@@ -392,6 +431,15 @@ window.SOIS_STORE = {
       item.managerNote = managerNote;
       item.updatedAt = new Date().toLocaleString();
       this.saveSubmissions(list);
+
+      // Sync to Central Server API
+      try {
+        fetch('/api/update-status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, status: newStatus, managerNote })
+        }).catch(() => { });
+      } catch (e) { }
 
       // Patch in Supabase
       if (this._supaReady()) {
@@ -408,6 +456,15 @@ window.SOIS_STORE = {
   deleteSubmission(id) {
     const list = this.getSubmissions().filter(s => s.id !== id);
     this.saveSubmissions(list);
+
+    // Sync to Central Server API
+    try {
+      fetch('/api/delete-submission', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      }).catch(() => { });
+    } catch (e) { }
 
     if (this._supaReady()) {
       fetch(this._supa('submissions') + `?id=eq.${encodeURIComponent(id)}`, {

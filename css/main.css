@@ -4,11 +4,14 @@
    ========================================================================== */
 
 :root {
-  --primary: #1e3a8a;
-  --primary-hover: #1e40af;
-  --primary-light: #eff6ff;
-  --accent: #2563eb;
-  --secondary: #475569;
+  /* Official Presidency University Brand Colors (Nile Blue & Gold) */
+  --primary: #0f2d59;
+  --primary-hover: #173e75;
+  --primary-light: #f0f4f9;
+  --primary-dark: #091c38;
+  --accent: #d97706;
+  --accent-gold: #f59e0b;
+  --secondary: #334155;
   --success: #059669;
   --warning: #d97706;
   --danger: #dc2626;
@@ -18,9 +21,9 @@
   --text-muted: #64748b;
   --border-color: #cbd5e1;
   --table-border: #000000;
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 3px 0 rgba(15, 45, 89, 0.08);
+  --shadow-md: 0 4px 6px -1px rgba(15, 45, 89, 0.12), 0 2px 4px -1px rgba(15, 45, 89, 0.06);
+  --shadow-lg: 0 10px 20px -3px rgba(15, 45, 89, 0.15), 0 4px 6px -2px rgba(15, 45, 89, 0.05);
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 16px;
@@ -29,15 +32,18 @@
 }
 
 [data-theme="dark"] {
-  --primary: #3b82f6;
-  --primary-hover: #60a5fa;
-  --primary-light: #1e293b;
-  --background: #0f172a;
-  --card-bg: #1e293b;
+  --primary: #38bdf8;
+  --primary-hover: #7dd3fc;
+  --primary-light: #0f2d59;
+  --primary-dark: #07172e;
+  --accent: #fbbf24;
+  --accent-gold: #f59e0b;
+  --background: #091322;
+  --card-bg: #0f2038;
   --text-main: #f8fafc;
   --text-muted: #94a3b8;
-  --border-color: #334155;
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+  --border-color: #1e3a5f;
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.6);
 }
 
 * {
@@ -85,17 +91,22 @@ body {
 }
 
 .auth-logo {
-  width: 60px;
-  height: 60px;
-  background: linear-gradient(135deg, #1e3a8a, #2563eb);
-  color: #fff;
-  font-weight: 800;
-  font-size: 1.6rem;
-  border-radius: 12px;
+  width: auto;
+  height: auto;
+  background: transparent;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.auth-logo-img {
+  width: 90px;
+  height: 90px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
+  filter: drop-shadow(0 2px 4px rgba(15, 45, 89, 0.15));
 }
 
 .auth-header h2 {
@@ -156,8 +167,15 @@ body {
   text-transform: uppercase;
 }
 
-.role-manager-tag { background: #dbeafe; color: #1e40af; }
-.role-faculty-tag { background: #e0e7ff; color: #3730a3; }
+.role-manager-tag {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.role-faculty-tag {
+  background: #e0e7ff;
+  color: #3730a3;
+}
 
 /* Header */
 .app-header {
@@ -180,16 +198,26 @@ body {
 }
 
 .brand-logo {
-  width: 44px;
-  height: 44px;
-  background: linear-gradient(135deg, #1e3a8a, #3b82f6);
-  border-radius: var(--radius-md);
+  width: 48px;
+  height: 48px;
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  font-weight: 800;
-  font-size: 1.25rem;
+}
+
+.brand-logo-img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+
+.qp-logo-img {
+  width: 76px;
+  height: 76px;
+  object-fit: contain;
+  margin: 0 auto 6px auto;
+  display: block;
 }
 
 .brand-title h1 {
@@ -224,15 +252,50 @@ body {
   transition: all 0.2s ease;
 }
 
-.btn-primary { background-color: var(--primary); color: #ffffff; }
-.btn-primary:hover { background-color: var(--primary-hover); transform: translateY(-1px); }
-.btn-secondary { background-color: transparent; border-color: var(--border-color); color: var(--text-main); }
-.btn-secondary:hover { background-color: var(--primary-light); border-color: var(--primary); }
-.btn-success { background-color: var(--success); color: #ffffff; }
-.btn-success:hover { background-color: #047857; }
-.btn-accent { background-color: var(--accent); color: #ffffff; }
-.btn-danger { background-color: var(--danger); color: #ffffff; }
-.btn-sm { padding: 0.35rem 0.65rem; font-size: 0.78rem; }
+.btn-primary {
+  background-color: var(--primary);
+  color: #ffffff;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background-color: transparent;
+  border-color: var(--border-color);
+  color: var(--text-main);
+}
+
+.btn-secondary:hover {
+  background-color: var(--primary-light);
+  border-color: var(--primary);
+}
+
+.btn-success {
+  background-color: var(--success);
+  color: #ffffff;
+}
+
+.btn-success:hover {
+  background-color: #047857;
+}
+
+.btn-accent {
+  background-color: var(--accent);
+  color: #ffffff;
+}
+
+.btn-danger {
+  background-color: var(--danger);
+  color: #ffffff;
+}
+
+.btn-sm {
+  padding: 0.35rem 0.65rem;
+  font-size: 0.78rem;
+}
 
 /* Main Layout */
 .app-container {
@@ -245,7 +308,9 @@ body {
 }
 
 @media (max-width: 1200px) {
-  .app-container { grid-template-columns: 1fr; }
+  .app-container {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Panels */
@@ -308,7 +373,8 @@ body {
   margin-top: 0.75rem;
 }
 
-.data-table th, .data-table td {
+.data-table th,
+.data-table td {
   padding: 0.75rem;
   font-size: 0.85rem;
   border-bottom: 1px solid var(--border-color);
@@ -327,9 +393,21 @@ body {
   font-size: 0.75rem;
   font-weight: 700;
 }
-.status-submitted { background: #dbeafe; color: #1e40af; }
-.status-review { background: #fef3c7; color: #92400e; }
-.status-approved { background: #d1fae5; color: #065f46; }
+
+.status-submitted {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.status-review {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-approved {
+  background: #d1fae5;
+  color: #065f46;
+}
 
 .form-grid {
   display: grid;
@@ -512,7 +590,8 @@ body {
   font-size: 10.5pt;
 }
 
-.qp-table th, .qp-table td {
+.qp-table th,
+.qp-table td {
   border: 1px solid #000000;
   padding: 5px 8px;
   vertical-align: top;
@@ -539,18 +618,36 @@ body {
   display: block;
 }
 
-.text-center { text-align: center; }
-.text-right { text-align: right; }
-.font-bold { font-weight: bold; }
+.text-center {
+  text-align: center;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.font-bold {
+  font-weight: bold;
+}
 
 @media print {
+
   /* Hide all non-printable UI elements */
   body {
     background: #ffffff !important;
     color: #000000 !important;
   }
-  
-  .app-header, .control-panel, .auth-overlay, .modal-header, .modal-footer, .no-print, button, nav, .dashboard-grid, .panel {
+
+  .app-header,
+  .control-panel,
+  .auth-overlay,
+  .modal-header,
+  .modal-footer,
+  .no-print,
+  button,
+  nav,
+  .dashboard-grid,
+  .panel {
     display: none !important;
   }
 
@@ -559,11 +656,18 @@ body {
     visibility: hidden;
   }
 
-  .preview-paper, .preview-paper *, #printableArea, #printableArea *, #paperContentPreview, #paperContentPreview * {
+  .preview-paper,
+  .preview-paper *,
+  #printableArea,
+  #printableArea *,
+  #paperContentPreview,
+  #paperContentPreview * {
     visibility: visible !important;
   }
 
-  .preview-paper, #printableArea, #paperContentPreview {
+  .preview-paper,
+  #printableArea,
+  #paperContentPreview {
     position: absolute !important;
     left: 0 !important;
     top: 0 !important;
@@ -580,7 +684,9 @@ body {
   }
 
   /* Table borders in print */
-  .qp-table, .qp-table td, .qp-table th {
+  .qp-table,
+  .qp-table td,
+  .qp-table th {
     border: 1pt solid #000000 !important;
     color: #000000 !important;
   }

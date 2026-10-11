@@ -90,9 +90,11 @@ class QPExporter {
           .font-bold { font-weight: bold; }
         </style>
       </head>
-      <body>
         <div class="WordSection1">
           <div style="float: right; font-weight: bold;">${setName}</div>
+          <div style="text-align: center; margin-bottom: 6pt;">
+            <img src="${(typeof window !== 'undefined' && window.PRESIDENCY_LOGO_BASE64) ? window.PRESIDENCY_LOGO_BASE64 : 'images/presidency_logo.png'}" width="70" height="70" style="width:70px; height:70px; object-fit:contain;" alt="Presidency University" />
+          </div>
           <div class="title-header">PRESIDENCY UNIVERSITY BENGALURU</div>
           <div class="sub-header">SCHOOL OF INFORMATION SCIENCE</div>
 
@@ -262,8 +264,8 @@ class QPExporter {
 
     let partAHtml = partA.map((q, i) => `
       <tr>
-        <td class="text-center font-bold">${q.qNo || (i+1)}.</td>
-        <td>${this.escapeHtml(q.text)}${q.tableHtml ? '<br>'+q.tableHtml : ''}</td>
+        <td class="text-center font-bold">${q.qNo || (i + 1)}.</td>
+        <td>${this.escapeHtml(q.text)}${q.tableHtml ? '<br>' + q.tableHtml : ''}</td>
         <td class="text-center">${q.marks || 2} Marks</td>
         <td class="text-center">${q.bloom || 'L1'}</td>
         <td class="text-center">${q.co || 'CO1'}</td>
@@ -272,8 +274,8 @@ class QPExporter {
 
     let partBHtml = partB.map((q, i) => `
       <tr>
-        <td class="text-center font-bold">${q.qNo || (i+6)}.</td>
-        <td>${this.escapeHtml(q.text)}${q.tableHtml ? '<br>'+q.tableHtml : ''}</td>
+        <td class="text-center font-bold">${q.qNo || (i + 6)}.</td>
+        <td>${this.escapeHtml(q.text)}${q.tableHtml ? '<br>' + q.tableHtml : ''}</td>
         <td class="text-center">${q.marks || 10} Marks</td>
         <td class="text-center">${q.bloom || 'L3'}</td>
         <td class="text-center">${q.co || 'CO1'}</td>
@@ -282,6 +284,9 @@ class QPExporter {
 
     return `
       <div style="float: right; font-weight: bold;">${setName}</div>
+      <div style="text-align: center; margin-bottom: 6px;">
+        <img src="${(typeof window !== 'undefined' && window.PRESIDENCY_LOGO_BASE64) ? window.PRESIDENCY_LOGO_BASE64 : 'images/presidency_logo.png'}" style="width:70px; height:70px; object-fit:contain;" alt="Presidency University" />
+      </div>
       <div class="title-header">PRESIDENCY UNIVERSITY BENGALURU</div>
       <div class="sub-header">SCHOOL OF INFORMATION SCIENCE</div>
       <table>

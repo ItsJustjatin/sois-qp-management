@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Faculty Portal - SOIS Question Paper Management</title>
+  <link rel="icon" type="image/png" href="images/presidency_logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -19,19 +20,8 @@
   <div id="authOverlay" class="auth-overlay">
     <div class="auth-card">
       <div class="auth-header">
-        <div class="auth-logo"
-          style="background:none; box-shadow:none; padding:0; width:76px; height:76px; margin:0 auto 0.75rem auto;">
-          <svg width="76" height="76" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="60" cy="60" r="56" fill="#1e3a8a" stroke="#d97706" stroke-width="4" />
-            <path d="M60 20 L85 35 V60 C85 78 60 92 60 92 C60 92 35 78 35 60 V35 Z" fill="#1d4ed8" stroke="#f59e0b"
-              stroke-width="3" />
-            <path d="M60 25 L80 38 V58 C80 73 60 85 60 85 C60 85 40 73 40 58 V38 Z" fill="#0f172a" />
-            <text x="60" y="58" font-family="'Outfit', sans-serif" font-weight="800" font-size="22" fill="#fbbf24"
-              text-anchor="middle">PU</text>
-            <text x="60" y="74" font-family="'Inter', sans-serif" font-weight="700" font-size="9" fill="#ffffff"
-              text-anchor="middle">SOIS</text>
-            <polygon points="60,12 63,18 70,18 64,22 66,28 60,24 54,28 56,22 50,18 57,18" fill="#fbbf24" />
-          </svg>
+        <div class="auth-logo">
+          <img src="images/presidency_logo.png" alt="Presidency University Emblem" class="auth-logo-img">
         </div>
         <h2>Presidency University</h2>
         <p style="font-weight:700; color:var(--primary); font-size:0.85rem; margin-top:2px;">Faculty Question Paper
@@ -139,7 +129,9 @@
   <!-- APP HEADER -->
   <header class="app-header no-print">
     <div class="brand-container">
-      <div class="brand-logo">PU</div>
+      <div class="brand-logo">
+        <img src="images/presidency_logo.png" alt="Presidency University" class="brand-logo-img">
+      </div>
       <div class="brand-title">
         <h1>Faculty Question Paper Preparation Portal</h1>
         <p>PRESIDENCY UNIVERSITY BENGALURU • SCHOOL OF INFORMATION SCIENCE</p>
@@ -290,8 +282,9 @@ PART B
       <div class="preview-wrapper">
         <div class="preview-paper" id="printableArea">
 
-          <div style="position: relative;">
+          <div style="position: relative; text-align: center;">
             <div class="qp-set-badge" id="prevSetBadge">SET A</div>
+            <img src="images/presidency_logo.png" alt="Presidency University Emblem" class="qp-logo-img">
             <div class="qp-header-title">PRESIDENCY UNIVERSITY BENGALURU</div>
             <div class="qp-school-title">SCHOOL OF INFORMATION SCIENCE</div>
           </div>
@@ -358,29 +351,21 @@ PART B
 
   </main>
 
-  <!-- Footer Portal Links -->
+  <!-- Portal Footer -->
   <footer
-    style="background:var(--surface-color, #fff); border-top:2px solid var(--border-color, #e2e8f0); padding:1.25rem 2rem; display:flex; align-items:center; justify-content:center; gap:1.5rem; flex-wrap:wrap; font-family:'Inter',sans-serif;"
+    style="background:var(--surface-color, #fff); border-top:1px solid var(--border-color, #e2e8f0); padding:1rem 2rem; display:flex; align-items:center; justify-content:center; font-family:'Inter',sans-serif; text-align:center;"
     class="no-print">
-    <span style="font-size:0.85rem; font-weight:600; color:var(--text-muted,#64748b);">&#127963; SOIS QP Management
-      System &mdash; Quick Access:</span>
-    <a href="faculty.html"
-      style="display:inline-flex; align-items:center; gap:0.5rem; background:#1e3a8a; color:#fff; text-decoration:none; padding:0.5rem 1.25rem; border-radius:8px; font-weight:700; font-size:0.88rem;"
-      onmouseover="this.style.background='#1d4ed8'" onmouseout="this.style.background='#1e3a8a'">&#128100; Faculty
-      Portal</a>
-    <a href="manager.html"
-      style="display:inline-flex; align-items:center; gap:0.5rem; background:#065f46; color:#fff; text-decoration:none; padding:0.5rem 1.25rem; border-radius:8px; font-weight:700; font-size:0.88rem;"
-      onmouseover="this.style.background='#047857'" onmouseout="this.style.background='#065f46'">&#128081; Manager
-      Portal</a>
-    <a href="index.html"
-      style="display:inline-flex; align-items:center; gap:0.5rem; background:#374151; color:#fff; text-decoration:none; padding:0.5rem 1.25rem; border-radius:8px; font-weight:700; font-size:0.88rem;"
-      onmouseover="this.style.background='#1f2937'" onmouseout="this.style.background='#374151'">&#127968; Home</a>
+    <span style="font-size:0.82rem; font-weight:500; color:var(--text-muted,#64748b);">
+      Presidency University Bengaluru &bull; School of Information Science &bull; Faculty Question Paper Preparation
+      Portal
+    </span>
   </footer>
 
   <script src="js/config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script>if (window.emailjs && window.SOIS_CONFIG) emailjs.init({ publicKey: window.SOIS_CONFIG.EMAILJS_PUBLIC_KEY });</script>
   <script src="js/store.js"></script>
+  <script src="js/logo-data.js"></script>
   <script src="js/qp-builder.js"></script>
   <script src="js/docx-exporter.js"></script>
   <script src="js/faculty.js"></script>

@@ -99,8 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
         `${otpRes.message || 'Email delivery failed.'}<br><br>` +
         `<span style="font-size:0.77rem;">` +
         `Please ensure you entered a valid <b>@presidencyuniversity.in</b> email, then try again.<br>` +
-        `If the problem persists, contact the manager: <b>Mr. Jatin</b> ` +
-        `(<a href="mailto:jatin@presidencyuniversity.in" style="color:inherit;">jatin@presidencyuniversity.in</a>).` +
+        `If the problem persists, contact the Course In-Charge / Exam Coordinator.` +
         `</span>`;
       authMsg.style.background = '#fee2e2';
       authMsg.style.color = '#991b1b';

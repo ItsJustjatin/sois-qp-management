@@ -1,0 +1,22 @@
+{
+    "name": "sois-qp-management",
+    "version": "1.0.0",
+    "description": "SOIS Question Paper Management System - Presidency University Bengaluru",
+    "main": "server.js",
+    "scripts": {
+        "start": "node server.js",
+        "dev": "node server.js"
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    },
+    "keywords": [
+        "question-paper",
+        "university",
+        "SOIS",
+        "Presidency"
+    ],
+    "author": "ItsJustjatin",
+    "license": "UNLICENSED",
+    "private": true
+}
