@@ -11,35 +11,32 @@ const PORT = process.env.PORT || 8080;
 const DATA_DIR = path.join(__dirname, 'data');
 const SUBMISSIONS_FILE = path.join(DATA_DIR, 'submissions.json');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
+const ASSIGNMENTS_FILE = path.join(DATA_DIR, 'assignments.json');
 
 // Ensure data folder and JSON files exist
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
-
-if (!fs.existsSync(SUBMISSIONS_FILE)) {
-  fs.writeFileSync(SUBMISSIONS_FILE, JSON.stringify([]));
-}
-
-if (!fs.existsSync(USERS_FILE)) {
-  fs.writeFileSync(USERS_FILE, JSON.stringify([]));
-}
+if (!fs.existsSync(SUBMISSIONS_FILE)) fs.writeFileSync(SUBMISSIONS_FILE, JSON.stringify([]));
+if (!fs.existsSync(USERS_FILE)) fs.writeFileSync(USERS_FILE, JSON.stringify([]));
+if (!fs.existsSync(ASSIGNMENTS_FILE)) fs.writeFileSync(ASSIGNMENTS_FILE, JSON.stringify([]));
 
 function readJson(filePath) {
-  try {
-    const raw = fs.readFileSync(filePath, 'utf8');
-    return JSON.parse(raw);
-  } catch (e) {
-    return [];
-  }
+  try { return JSON.parse(fs.readFileSync(filePath, 'utf8')); }
+  catch (e) { return []; }
 }
 
 function writeJson(filePath, data) {
-  try {
-    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
-  } catch (e) {
-    console.error('Error saving JSON:', e);
-  }
+  try { fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8'); }
+  catch (e) { console.error('Error saving JSON:', e); }
+}
+
+function parseBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', () => { try { resolve(JSON.parse(body)); } catch (e) { reject(e); } });
+  });
 }
 
 const MIME_TYPES = {
@@ -172,7 +169,7 @@ const server = http.createServer((req, res) => {
     req.on('data', chunk => body += chunk);
     req.on('end', () => {
       try {
-        const { punivId, name, password, role, email } = JSON.parse(body);
+        const { punivId, name, password, role, email, designation, phone } = JSON.parse(body);
         const users = readJson(USERS_FILE);
         const pid = punivId.trim().toUpperCase();
 
@@ -182,15 +179,18 @@ const server = http.createServer((req, res) => {
           user.password = password;
           user.role = role || user.role;
           if (email) user.email = email;
+          if (designation) user.designation = designation;
+          if (phone) user.phone = phone;
         } else {
           user = {
             punivId: pid,
             name: name.trim(),
             role: role || 'faculty',
-            designation: role === 'manager' ? 'Manager / Course In-Charge' : 'Faculty Member',
+            designation: designation || (role === 'manager' ? 'Manager / Course In-Charge' : 'Faculty Member'),
             department: 'SOIS',
             password: password.trim(),
-            email: email.trim() || `${pid.toLowerCase()}@presidencyuniversity.in`
+            email: email ? email.trim() : `${pid.toLowerCase()}@presidencyuniversity.in`,
+            phone: phone || ''
           };
           users.push(user);
         }
@@ -200,6 +200,135 @@ const server = http.createServer((req, res) => {
       } catch (err) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: false, message: 'Invalid user registration payload.' }));
+      }
+    });
+    return;
+  }
+
+  // GET /api/lookup-email?email=xxx  — find user by email (for forgot password)
+  if (req.method === 'GET' && pathname === '/api/lookup-email') {
+    const email = new URL(req.url, `http://localhost`).searchParams.get('email') || '';
+    const users = readJson(USERS_FILE);
+    const user = users.find(u => u.email && u.email.toLowerCase() === email.toLowerCase().trim());
+    if (user) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: true, punivId: user.punivId, name: user.name }));
+    } else {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, message: 'No account found with this email.' }));
+    }
+    return;
+  }
+
+  // POST /api/reset-password — update password by punivId
+  if (req.method === 'POST' && pathname === '/api/reset-password') {
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', () => {
+      try {
+        const { punivId, newPassword } = JSON.parse(body);
+        const users = readJson(USERS_FILE);
+        const pid = (punivId || '').trim().toUpperCase();
+        const user = users.find(u => u.punivId.toUpperCase() === pid);
+        if (!user) {
+          res.writeHead(404, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, message: 'User not found.' }));
+          return;
+        }
+        if (!newPassword || newPassword.trim().length < 8) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, message: 'Password must be at least 8 characters.' }));
+          return;
+        }
+        user.password = newPassword.trim();
+        writeJson(USERS_FILE, users);
+        console.log(`[API] Password reset for: ${pid}`);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, message: 'Password updated successfully.' }));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, message: 'Invalid payload.' }));
+      }
+    });
+    return;
+  }
+
+  // GET /api/assignments — all assignments
+  if (req.method === 'GET' && pathname === '/api/assignments') {
+    const assignments = readJson(ASSIGNMENTS_FILE);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(assignments));
+    return;
+  }
+
+  // GET /api/assignments/faculty?punivId=xxx — assignments for a specific faculty
+  if (req.method === 'GET' && pathname === '/api/assignments/faculty') {
+    const punivId = new URL(req.url, `http://localhost`).searchParams.get('punivId') || '';
+    const all = readJson(ASSIGNMENTS_FILE);
+    const result = all.filter(a => a.punivId && a.punivId.toUpperCase() === punivId.toUpperCase().trim());
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(result));
+    return;
+  }
+
+  // POST /api/assign — manager creates a new QP assignment for faculty
+  if (req.method === 'POST' && pathname === '/api/assign') {
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', () => {
+      try {
+        const data = JSON.parse(body);
+        const { punivId, facultyEmail, facultyName, courseCode, courseName, examType, managerName } = data;
+        if (!punivId || !courseCode || !courseName) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: false, message: 'punivId, courseCode, and courseName are required.' }));
+          return;
+        }
+        const assignments = readJson(ASSIGNMENTS_FILE);
+        const id = `ASSIGN-${Date.now()}`;
+        const assignment = {
+          id,
+          punivId: punivId.trim().toUpperCase(),
+          facultyEmail: facultyEmail || '',
+          facultyName: facultyName || '',
+          courseCode: courseCode.trim().toUpperCase(),
+          courseName: courseName.trim(),
+          examType: examType || 'CAT 1',
+          managerName: managerName || 'Course Coordinator',
+          assignedAt: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
+          status: 'Pending'
+        };
+        assignments.unshift(assignment);
+        writeJson(ASSIGNMENTS_FILE, assignments);
+        console.log(`[API] QP Assigned: ${id} → ${punivId} for ${courseCode}`);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, assignment }));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, message: 'Invalid assignment payload.' }));
+      }
+    });
+    return;
+  }
+
+  // POST /api/update-assignment-status — update assignment status when paper submitted
+  if (req.method === 'POST' && pathname === '/api/update-assignment-status') {
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', () => {
+      try {
+        const { id, status } = JSON.parse(body);
+        const assignments = readJson(ASSIGNMENTS_FILE);
+        const item = assignments.find(a => a.id === id);
+        if (item) {
+          item.status = status;
+          writeJson(ASSIGNMENTS_FILE, assignments);
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true }));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false }));
       }
     });
     return;

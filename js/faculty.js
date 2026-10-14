@@ -585,4 +585,308 @@ document.addEventListener('DOMContentLoaded', () => {
 
   renderForm();
   updatePreview();
+
+  // ── FORGOT PASSWORD FLOW ─────────────────────────────────────────────────
+  const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+  const forgotPwdModal = document.getElementById('forgotPwdModal');
+  const fpCancelBtn = document.getElementById('fpCancelBtn');
+  const fpSendOtpBtn = document.getElementById('fpSendOtpBtn');
+  const fpEmailInput = document.getElementById('fpEmailInput');
+  const fpEmailDisplay = document.getElementById('fpEmailDisplay');
+  const fpStep1 = document.getElementById('fpStep1');
+  const fpStep2 = document.getElementById('fpStep2');
+  const fpOtpInput = document.getElementById('fpOtpInput');
+  const fpNewPwdInput = document.getElementById('fpNewPwdInput');
+  const fpConfirmPwdInput = document.getElementById('fpConfirmPwdInput');
+  const fpResetBtn = document.getElementById('fpResetBtn');
+  const fpMsg = document.getElementById('fpMsg');
+
+  let fpPunivId = '';
+  let fpOtpExpected = '';
+
+  function showFpMsg(text, isError = false) {
+    if (!fpMsg) return;
+    fpMsg.innerHTML = text;
+    fpMsg.style.background = isError ? '#fee2e2' : '#dcfce7';
+    fpMsg.style.color = isError ? '#991b1b' : '#166534';
+    fpMsg.style.border = isError ? '1px solid #fca5a5' : '1px solid #86efac';
+    fpMsg.style.display = 'block';
+  }
+
+  if (forgotPasswordLink) {
+    forgotPasswordLink.addEventListener('click', () => {
+      if (forgotPwdModal) { forgotPwdModal.style.display = 'flex'; }
+      if (fpStep1) fpStep1.style.display = 'block';
+      if (fpStep2) fpStep2.style.display = 'none';
+      if (fpMsg) fpMsg.style.display = 'none';
+      if (fpEmailInput) fpEmailInput.value = '';
+    });
+  }
+
+  if (fpCancelBtn) {
+    fpCancelBtn.addEventListener('click', () => {
+      if (forgotPwdModal) forgotPwdModal.style.display = 'none';
+    });
+  }
+
+  if (fpSendOtpBtn) {
+    fpSendOtpBtn.addEventListener('click', async () => {
+      const email = (fpEmailInput ? fpEmailInput.value : '').trim();
+      if (!email.endsWith('@presidencyuniversity.in')) {
+        showFpMsg('❌ Only @presidencyuniversity.in emails are allowed.', true); return;
+      }
+      fpSendOtpBtn.disabled = true;
+      fpSendOtpBtn.textContent = '⏳ Sending OTP...';
+
+      // Lookup user by email
+      try {
+        const res = await fetch(`/api/lookup-email?email=${encodeURIComponent(email)}`);
+        const data = await res.json();
+        if (!data.success) {
+          showFpMsg(`❌ ${data.message || 'Email not found in system.'}`, true);
+          fpSendOtpBtn.disabled = false; fpSendOtpBtn.textContent = '📧 Send OTP to Email'; return;
+        }
+        fpPunivId = data.punivId;
+
+        // Generate OTP and send via EmailJS
+        const otp = String(Math.floor(100000 + Math.random() * 900000));
+        fpOtpExpected = otp;
+        store._storeOTP && store._storeOTP(email, otp);
+
+        const emailSvc = window.SOISEmailService;
+        if (emailSvc) {
+          const r = await emailSvc.sendForgotPasswordOTP(email, data.name || 'Faculty', otp);
+          if (!r.success) { showFpMsg(`⚠️ Email delivery issue: ${r.message}. Try again.`, true); }
+        }
+
+        if (fpEmailDisplay) fpEmailDisplay.textContent = email;
+        if (fpStep1) fpStep1.style.display = 'none';
+        if (fpStep2) fpStep2.style.display = 'block';
+      } catch (err) {
+        showFpMsg('❌ Network error. Is the server running?', true);
+      } finally {
+        fpSendOtpBtn.disabled = false; fpSendOtpBtn.textContent = '📧 Send OTP to Email';
+      }
+    });
+  }
+
+  if (fpResetBtn) {
+    fpResetBtn.addEventListener('click', async () => {
+      const enteredOtp = (fpOtpInput ? fpOtpInput.value : '').trim();
+      const newPwd = (fpNewPwdInput ? fpNewPwdInput.value : '').trim();
+      const confPwd = (fpConfirmPwdInput ? fpConfirmPwdInput.value : '').trim();
+
+      // Validate OTP
+      const storedOtp = store._getOTP ? store._getOTP(fpEmailDisplay.textContent) : fpOtpExpected;
+      if (enteredOtp !== storedOtp && enteredOtp !== fpOtpExpected) {
+        showFpMsg('❌ Incorrect OTP. Please check your email.', true); return;
+      }
+      if (newPwd.length < 8) {
+        showFpMsg('❌ Password must be at least 8 characters.', true); return;
+      }
+      if (newPwd !== confPwd) {
+        showFpMsg('❌ Passwords do not match.', true); return;
+      }
+
+      fpResetBtn.disabled = true; fpResetBtn.textContent = '⏳ Resetting...';
+
+      try {
+        const res = await fetch('/api/reset-password', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ punivId: fpPunivId, newPassword: newPwd })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showFpMsg('✅ Password reset successfully! You can now log in with your new password.');
+          setTimeout(() => {
+            if (forgotPwdModal) forgotPwdModal.style.display = 'none';
+            if (fpStep2) fpStep2.style.display = 'none';
+            if (fpStep1) fpStep1.style.display = 'block';
+          }, 2500);
+        } else {
+          showFpMsg(`❌ ${data.message}`, true);
+        }
+      } catch (err) {
+        showFpMsg('❌ Network error. Please try again.', true);
+      } finally {
+        fpResetBtn.disabled = false; fpResetBtn.textContent = '✅ Reset Password';
+      }
+    });
+  }
+
+  // ── ASSIGNMENT MODE: load from ?assign=ASSIGN-xxx URL param ──────────────
+  (async function checkAssignmentMode() {
+    const params = new URLSearchParams(window.location.search);
+    const assignId = params.get('assign');
+    if (!assignId) return;
+
+    try {
+      const res = await fetch('/api/assignments');
+      const all = await res.json();
+      const assignment = all.find(a => a.id === assignId);
+      if (!assignment) return;
+
+      // Store assignment for post-login lock
+      window._activeAssignment = assignment;
+
+      // Show banner
+      const banner = document.getElementById('assignmentBanner');
+      if (banner) {
+        document.getElementById('bannerCourseCode').textContent = assignment.courseCode;
+        document.getElementById('bannerCourseName').textContent = assignment.courseName;
+        document.getElementById('bannerExamType').textContent = assignment.examType;
+        banner.style.display = 'flex';
+      }
+
+      // If user is already logged in, apply immediately
+      if (store.getSavedAuth()) {
+        applyAssignmentLock(assignment);
+      }
+
+      // Also lock after login
+      const origOnLoginSuccess = window._origOnLoginSuccess;
+      if (typeof onLoginSuccess === 'function') {
+        window._postLoginAssignment = assignment;
+      }
+    } catch (e) { console.warn('Assignment lookup failed:', e); }
+  })();
+
+  function applyAssignmentLock(assignment) {
+    const ccInput = document.getElementById('courseCodeInput');
+    const cnInput = document.getElementById('courseNameInput');
+    const ccNote = document.getElementById('courseLockedNote');
+    const cnNote = document.getElementById('courseNameLockedNote');
+    const etInput = document.getElementById('examTitleInput');
+
+    if (ccInput) { ccInput.value = assignment.courseCode; ccInput.readOnly = true; ccInput.style.background = 'var(--primary-light)'; }
+    if (cnInput) { cnInput.value = assignment.courseName; cnInput.readOnly = true; cnInput.style.background = 'var(--primary-light)'; }
+    if (ccNote) ccNote.style.display = 'inline';
+    if (cnNote) cnNote.style.display = 'inline';
+    if (etInput && !etInput.value) etInput.value = assignment.examType;
+  }
+
+  // Patch onLoginSuccess to apply assignment lock after login
+  const _orig = onLoginSuccess;
+  window._origOnLoginSuccess = _orig;
+
+  // ── CO MODULE PARSING & BLOOM/CO AUTO-DETECT ────────────────────────────
+  const toggleCoModuleBtn = document.getElementById('toggleCoModuleBtn');
+  const coModuleBody = document.getElementById('coModuleBody');
+  const parseCoModuleBtn = document.getElementById('parseCoModuleBtn');
+  const coModuleText = document.getElementById('coModuleText');
+  const coModuleStatus = document.getElementById('coModuleStatus');
+
+  // Bloom's level verb map (L1→L6)
+  const BLOOM_VERBS = {
+    L1: ['define', 'list', 'state', 'recall', 'name', 'identify', 'label', 'match', 'recognize', 'memorize'],
+    L2: ['explain', 'describe', 'summarize', 'classify', 'illustrate', 'interpret', 'paraphrase', 'discuss', 'restate'],
+    L3: ['apply', 'solve', 'use', 'demonstrate', 'compute', 'calculate', 'construct', 'perform', 'implement'],
+    L4: ['analyze', 'compare', 'contrast', 'differentiate', 'distinguish', 'examine', 'break down', 'categorize'],
+    L5: ['evaluate', 'justify', 'assess', 'critique', 'judge', 'argue', 'recommend', 'validate'],
+    L6: ['create', 'design', 'build', 'formulate', 'develop', 'generate', 'compose', 'plan', 'produce']
+  };
+
+  // Parsed CO keyword map: { 'CO1': ['define','list',...], 'CO2': [...] }
+  let coKeywordMap = {};
+
+  if (toggleCoModuleBtn && coModuleBody) {
+    toggleCoModuleBtn.addEventListener('click', () => {
+      const open = coModuleBody.style.display !== 'none';
+      coModuleBody.style.display = open ? 'none' : 'block';
+      toggleCoModuleBtn.textContent = open ? '▼ Show' : '▲ Hide';
+    });
+  }
+
+  /**
+   * Parse CO module text like:
+   *   CO1: define, list, state, recall
+   *   CO2: explain, describe, summarize
+   */
+  function parseCOModule(text) {
+    const map = {};
+    const lines = text.split('\n');
+    lines.forEach(line => {
+      const m = line.match(/^(CO\d+)\s*[:\-]\s*(.+)/i);
+      if (m) {
+        const co = m[1].toUpperCase();
+        const kws = m[2].split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
+        map[co] = kws;
+      }
+    });
+    return map;
+  }
+
+  if (parseCoModuleBtn) {
+    parseCoModuleBtn.addEventListener('click', () => {
+      const text = coModuleText ? coModuleText.value.trim() : '';
+      if (!text) {
+        if (coModuleStatus) coModuleStatus.textContent = '⚠️ Please paste your CO mapping first.';
+        return;
+      }
+      coKeywordMap = parseCOModule(text);
+      const coCount = Object.keys(coKeywordMap).length;
+      if (coCount === 0) {
+        if (coModuleStatus) coModuleStatus.textContent = '❌ Could not parse any COs. Check format.';
+        return;
+      }
+      if (coModuleStatus) {
+        coModuleStatus.textContent = `✅ Loaded ${coCount} COs. Auto-detection active on question inputs.`;
+        coModuleStatus.style.color = 'var(--success)';
+      }
+      window.soisCoKeywordMap = coKeywordMap;  // Make globally accessible
+    });
+  }
+
+  /**
+   * Auto-detect CO and Bloom's level from a question text string.
+   * Returns { co: 'CO1', bloom: 'L2' } or null if no match.
+   */
+  window.autoDetectCOAndBloom = function (questionText) {
+    if (!questionText) return null;
+    const text = questionText.toLowerCase();
+
+    // Detect Bloom level by first-word verb match
+    let detectedBloom = null;
+    for (const [level, verbs] of Object.entries(BLOOM_VERBS)) {
+      if (verbs.some(v => text.startsWith(v) || text.includes(' ' + v + ' ') || text.includes(' ' + v + '.'))) {
+        detectedBloom = level; break;
+      }
+    }
+
+    // Detect CO by keyword overlap
+    let detectedCO = null;
+    const km = window.soisCoKeywordMap || coKeywordMap;
+    if (Object.keys(km).length > 0) {
+      let bestScore = 0;
+      for (const [co, keywords] of Object.entries(km)) {
+        const score = keywords.filter(kw => text.includes(kw)).length;
+        if (score > bestScore) { bestScore = score; detectedCO = co; }
+      }
+    }
+
+    if (!detectedBloom && !detectedCO) return null;
+    return { bloom: detectedBloom || null, co: detectedCO || null };
+  };
+
+  // Auto-detect on question text blur in Part A / Part B inputs
+  document.addEventListener('change', (e) => {
+    const inp = e.target;
+    if (!inp.classList.contains('q-text-input') && !inp.id.includes('qText')) return;
+    const detect = window.autoDetectCOAndBloom(inp.value);
+    if (!detect) return;
+
+    // Find sibling Bloom and CO selects within the same question card
+    const card = inp.closest('.question-card') || inp.closest('tr') || inp.parentElement;
+    if (!card) return;
+    const bloomSel = card.querySelector('[id*="Bloom"], [class*="bloom-select"], select[name*="bloom"]');
+    const coSel = card.querySelector('[id*="Co"], [class*="co-select"], select[name*="co"]');
+    if (bloomSel && detect.bloom) bloomSel.value = detect.bloom;
+    if (coSel && detect.co) coSel.value = detect.co;
+  });
+
+  // Also apply assignment lock now if post-login assignment is set
+  if (window._postLoginAssignment) {
+    applyAssignmentLock(window._postLoginAssignment);
+  }
 });
+

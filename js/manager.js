@@ -261,9 +261,10 @@ document.addEventListener('DOMContentLoaded', () => {
     userProfileBadge.style.display = 'flex';
 
     renderDashboard();
-    // Auto refresh Manager Dashboard every 5 seconds to receive new faculty submissions in real time
+    loadAssignments();
+    // Auto refresh Manager Dashboard every 5 seconds
     if (!window.managerPollInterval) {
-      window.managerPollInterval = setInterval(renderDashboard, 5000);
+      window.managerPollInterval = setInterval(() => { renderDashboard(); loadAssignments(); }, 5000);
     }
   }
 
@@ -444,8 +445,8 @@ document.addEventListener('DOMContentLoaded', () => {
     paperModal.style.display = 'flex';
   }
 
-  // Save Manager Decision
-  saveDecisionBtn.addEventListener('click', () => {
+  // Save Manager Decision (+ send rejection email if rejected)
+  saveDecisionBtn.addEventListener('click', async () => {
     if (!activeSubmission) return;
     const newStatus = modalStatusSelect.value;
     const note = modalManagerNoteInput.value.trim();
@@ -454,7 +455,24 @@ document.addEventListener('DOMContentLoaded', () => {
     activeSubmission.status = newStatus;
     activeSubmission.managerNote = note;
 
-    alert(`Decision saved successfully for ${activeSubmission.id}! Status set to '${newStatus}'.`);
+    // Send rejection email to faculty
+    if (newStatus === 'Rejected' || newStatus === 'Revision Requested') {
+      const emailSvc = window.SOISEmailService;
+      const users = store.getUsers ? store.getUsers() : [];
+      const fac = users.find(u => u.punivId === activeSubmission.punivId);
+      const facEmail = fac ? fac.email : activeSubmission.facultyEmail || '';
+      if (emailSvc && facEmail) {
+        emailSvc.sendRejectionEmail(
+          facEmail,
+          activeSubmission.facultyName || 'Faculty',
+          activeSubmission.courseCode,
+          activeSubmission.courseName,
+          note || 'Please review and resubmit.'
+        ).then(r => console.log('[Email] Rejection email:', r.success ? 'sent' : r.message));
+      }
+    }
+
+    alert(`Decision saved! Status set to '${newStatus}'.`);
     renderDashboard();
   });
 
@@ -612,4 +630,105 @@ document.addEventListener('DOMContentLoaded', () => {
       window.print();
     }
   });
+  // ── ASSIGNMENT FORM ────────────────────────────────────────────────────────
+  const toggleAssignFormBtn = document.getElementById('toggleAssignFormBtn');
+  const assignFormWrapper = document.getElementById('assignFormWrapper');
+  const assignQpForm = document.getElementById('assignQpForm');
+  const assignMsg = document.getElementById('assignMsg');
+  const assignmentsTableBody = document.getElementById('assignmentsTableBody');
+
+  if (toggleAssignFormBtn && assignFormWrapper) {
+    toggleAssignFormBtn.addEventListener('click', () => {
+      const open = assignFormWrapper.style.display !== 'none';
+      assignFormWrapper.style.display = open ? 'none' : 'block';
+      toggleAssignFormBtn.textContent = open ? '➕ New Assignment' : '✖ Cancel';
+    });
+  }
+
+  async function loadAssignments() {
+    if (!assignmentsTableBody) return;
+    try {
+      const res = await fetch('/api/assignments');
+      const assignments = await res.json();
+      if (!assignments.length) {
+        assignmentsTableBody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:1.5rem;color:var(--text-muted);">No assignments yet.</td></tr>';
+        return;
+      }
+      assignmentsTableBody.innerHTML = assignments.map(a => {
+        const statusColor = a.status === 'Submitted' ? 'var(--success)' : a.status === 'Pending' ? 'var(--warning)' : 'var(--text-muted)';
+        return `<tr>
+          <td>${a.facultyName || '—'}</td>
+          <td><code>${a.punivId}</code></td>
+          <td><b>${a.courseCode}</b></td>
+          <td>${a.courseName}</td>
+          <td>${a.examType}</td>
+          <td style="font-size:0.78rem;">${a.assignedAt}</td>
+          <td><span style="font-weight:700;color:${statusColor};">${a.status}</span></td>
+        </tr>`;
+      }).join('');
+    } catch (e) { console.warn('loadAssignments failed', e); }
+  }
+
+  if (assignQpForm) {
+    assignQpForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = assignQpForm.querySelector('button[type=submit]');
+      if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '⏳ Sending...'; }
+
+      const currentUser = store.getSavedAuth ? store.getSavedAuth() : null;
+      const payload = {
+        punivId: document.getElementById('assignPunivId').value.trim(),
+        facultyName: document.getElementById('assignFacultyName').value.trim(),
+        facultyEmail: document.getElementById('assignFacultyEmail').value.trim(),
+        courseCode: document.getElementById('assignCourseCode').value.trim().toUpperCase(),
+        courseName: document.getElementById('assignCourseName').value.trim(),
+        examType: document.getElementById('assignExamType').value,
+        managerName: currentUser ? currentUser.name : 'Course Coordinator'
+      };
+
+      try {
+        const res = await fetch('/api/assign', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          // Send assignment email via EmailJS
+          const emailSvc = window.SOISEmailService;
+          const portalLink = `${window.location.origin}/faculty.html?assign=${data.assignment.id}`;
+          if (emailSvc && payload.facultyEmail) {
+            emailSvc.sendAssignmentEmail(
+              payload.facultyEmail, payload.facultyName,
+              payload.courseCode, payload.courseName,
+              payload.examType, portalLink, payload.managerName
+            ).then(r => console.log('[Email] Assignment email:', r.success ? 'sent' : r.message));
+          }
+
+          showAssignMsg('✅ Assignment created! Email notification sent to faculty.', '#dcfce7', '#166534');
+          assignQpForm.reset();
+          assignFormWrapper.style.display = 'none';
+          toggleAssignFormBtn.textContent = '➕ New Assignment';
+          loadAssignments();
+        } else {
+          showAssignMsg(`❌ ${data.message || 'Failed to create assignment.'}`, '#fee2e2', '#991b1b');
+        }
+      } catch (err) {
+        showAssignMsg('❌ Network error. Please try again.', '#fee2e2', '#991b1b');
+      } finally {
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '📧 Assign & Notify Faculty'; }
+      }
+    });
+  }
+
+  function showAssignMsg(text, bg, color) {
+    if (!assignMsg) return;
+    assignMsg.innerHTML = text;
+    assignMsg.style.background = bg;
+    assignMsg.style.color = color;
+    assignMsg.style.border = `1px solid ${color}40`;
+    assignMsg.style.display = 'block';
+    setTimeout(() => { assignMsg.style.display = 'none'; }, 6000);
+  }
 });

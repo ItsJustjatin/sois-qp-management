@@ -251,6 +251,82 @@
       </div>
     </div>
 
+    <!-- ASSIGN QP TO FACULTY PANEL -->
+    <section class="panel" id="assignPanel">
+      <div class="panel-header">
+        <h2 class="panel-title" style="display:flex;align-items:center;gap:0.5rem;">📋 Assign Question Paper to Faculty
+        </h2>
+        <button id="toggleAssignFormBtn" class="btn btn-primary btn-sm">➕ New Assignment</button>
+      </div>
+
+      <!-- Assignment Form (hidden by default) -->
+      <div id="assignFormWrapper"
+        style="display:none; padding:1.25rem; border-top:1px solid var(--border-color); background:var(--background); border-radius:0 0 var(--radius-lg) var(--radius-lg);">
+        <form id="assignQpForm"
+          style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:1rem; align-items:end;">
+          <div class="form-group">
+            <label>Faculty PUNIV ID</label>
+            <input type="text" id="assignPunivId" class="form-control" placeholder="e.g. PUNIV09182" required>
+          </div>
+          <div class="form-group">
+            <label>Faculty Full Name</label>
+            <input type="text" id="assignFacultyName" class="form-control" placeholder="e.g. Dr. Priya Sharma" required>
+          </div>
+          <div class="form-group">
+            <label>Faculty Email (@presidencyuniversity.in)</label>
+            <input type="email" id="assignFacultyEmail" class="form-control" placeholder="priya@presidencyuniversity.in"
+              required>
+          </div>
+          <div class="form-group">
+            <label>Course Code</label>
+            <input type="text" id="assignCourseCode" class="form-control" placeholder="e.g. CSA4202" required>
+          </div>
+          <div class="form-group">
+            <label>Course Name</label>
+            <input type="text" id="assignCourseName" class="form-control" placeholder="e.g. Machine Learning" required>
+          </div>
+          <div class="form-group">
+            <label>Exam Type</label>
+            <select id="assignExamType" class="form-control">
+              <option value="CAT 1">CAT 1 (Continuous Assessment Test 1)</option>
+              <option value="CAT 2">CAT 2 (Continuous Assessment Test 2)</option>
+              <option value="Mid Term">Mid Term Examination</option>
+              <option value="End Term">End Term Examination</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:0.5rem;align-items:center;">
+            <button type="submit" class="btn btn-success" style="width:100%;justify-content:center;">📧 Assign &amp;
+              Notify Faculty</button>
+          </div>
+        </form>
+        <div id="assignMsg"
+          style="display:none;margin-top:1rem;padding:0.75rem 1rem;border-radius:8px;font-size:0.85rem;"></div>
+      </div>
+
+      <!-- Assignments List -->
+      <div style="overflow-x:auto; padding:0 1.25rem 1.25rem;">
+        <table class="data-table" id="assignmentsTable">
+          <thead>
+            <tr>
+              <th>Faculty</th>
+              <th>PUNIV ID</th>
+              <th>Course Code</th>
+              <th>Course Name</th>
+              <th>Exam Type</th>
+              <th>Assigned On</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="assignmentsTableBody">
+            <tr>
+              <td colspan="7" style="text-align:center;padding:1.5rem;color:var(--text-muted);">No assignments yet. Use
+                the form above to assign a QP.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
     <!-- SUBMISSIONS MANAGEMENT PANEL -->
     <section class="panel">
       <div class="panel-header" style="flex-wrap: wrap; gap: 1rem;">
@@ -408,6 +484,7 @@
   <script>if (window.emailjs && window.SOIS_CONFIG) emailjs.init({ publicKey: window.SOIS_CONFIG.EMAILJS_PUBLIC_KEY });</script>
   <script src="js/store.js"></script>
   <script src="js/logo-data.js"></script>
+  <script src="js/email-service.js"></script>
   <script src="js/docx-exporter.js"></script>
   <script src="js/manager.js"></script>
 </body>

@@ -17,8 +17,12 @@ window.SOIS_CONFIG = {
     // ls/month free)
     // Template body must include: {{otp_code}} and {{to_name}}
     EMAILJS_SERVICE_ID: 'service_wbv376d',   // e.g. service_abc123
-    EMAILJS_TEMPLATE_ID: 'template_p92sk9z',  // e.g. template_xyz789
+    EMAILJS_TEMPLATE_ID: 'template_p92sk9z',  // OTP template (login/register)
     EMAILJS_PUBLIC_KEY: 'uzY3ybC81z3hBVlue',   // from Account → General
+    // New email templates — create these in emailjs.com and paste IDs here:
+    EMAILJS_FORGOT_TEMPLATE_ID: 'template_p92sk9z',     // Forgot password OTP (can reuse OTP template)
+    EMAILJS_ASSIGNMENT_TEMPLATE_ID: 'template_assign',  // QP assignment notification
+    EMAILJS_REJECTION_TEMPLATE_ID: 'template_reject',   // QP rejection notification
 
     // ─── SMS OTP (via Netlify Function + Twilio) ──────────────────────────────
     // Sign up free at: https://twilio.com/try-twilio

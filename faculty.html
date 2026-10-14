@@ -55,6 +55,11 @@
           style="margin-top:0.85rem; background:#dbeafe; border:1px solid #93c5fd; color:#1e40af; padding:0.55rem 0.75rem; border-radius:8px; font-size:0.78rem; text-align:center;">
           🆕 <b>First time here?</b> Click the <b>📝 New Faculty Registration</b> tab above to create your account.
         </div>
+        <div style="text-align:center; margin-top:0.65rem;">
+          <button type="button" id="forgotPasswordLink"
+            style="background:none;border:none;color:var(--primary);font-size:0.8rem;cursor:pointer;text-decoration:underline;">🔑
+            Forgot Password?</button>
+        </div>
       </form>
 
       <!-- REGISTRATION FORM -->
@@ -126,6 +131,59 @@
     </div>
   </div>
 
+  <!-- FORGOT PASSWORD MODAL -->
+  <div id="forgotPwdModal" class="auth-overlay" style="display:none; z-index:10600;">
+    <div class="auth-card" style="max-width:420px;">
+      <div class="auth-header">
+        <div style="font-size:2rem; margin-bottom:0.4rem;">🔑</div>
+        <h2>Reset Your Password</h2>
+        <p style="font-size:0.82rem; color:var(--text-muted);">Enter your registered university email. We'll send you an
+          OTP to reset your password.</p>
+      </div>
+
+      <!-- Step 1: Email -->
+      <div id="fpStep1">
+        <div id="fpMsg"
+          style="display:none; font-size:0.82rem; padding:0.6rem 0.8rem; border-radius:8px; margin-bottom:0.75rem;">
+        </div>
+        <div class="form-group" style="margin-bottom:0.85rem;">
+          <label for="fpEmailInput">University Email</label>
+          <input type="email" id="fpEmailInput" class="form-control" placeholder="you@presidencyuniversity.in" required>
+        </div>
+        <button id="fpSendOtpBtn" class="btn btn-primary" style="width:100%;justify-content:center;">📧 Send OTP to
+          Email</button>
+        <div style="text-align:center;margin-top:0.65rem;">
+          <button type="button" id="fpCancelBtn"
+            style="background:none;border:none;color:var(--text-muted);font-size:0.8rem;cursor:pointer;">✖
+            Cancel</button>
+        </div>
+      </div>
+
+      <!-- Step 2: OTP + New Password -->
+      <div id="fpStep2" style="display:none;">
+        <div
+          style="background:#dcfce7;border:1px solid #86efac;color:#166534;padding:0.6rem 0.8rem;border-radius:8px;font-size:0.8rem;margin-bottom:0.85rem;">
+          📨 OTP sent to <b id="fpEmailDisplay"></b>. Check your inbox.
+        </div>
+        <div class="form-group" style="margin-bottom:0.75rem;">
+          <label for="fpOtpInput">6-Digit OTP</label>
+          <input type="text" id="fpOtpInput" class="form-control" maxlength="6" placeholder="e.g. 482910"
+            style="text-align:center;font-size:1.4rem;letter-spacing:5px;font-weight:800;">
+        </div>
+        <div class="form-group" style="margin-bottom:0.75rem;">
+          <label for="fpNewPwdInput">New Password (min 8 characters)</label>
+          <input type="password" id="fpNewPwdInput" class="form-control" placeholder="Enter new password">
+        </div>
+        <div class="form-group" style="margin-bottom:1rem;">
+          <label for="fpConfirmPwdInput">Confirm New Password</label>
+          <input type="password" id="fpConfirmPwdInput" class="form-control" placeholder="Re-enter new password">
+        </div>
+        <button id="fpResetBtn" class="btn btn-success" style="width:100%;justify-content:center;">✅ Reset
+          Password</button>
+      </div>
+    </div>
+  </div>
+
   <!-- APP HEADER -->
   <header class="app-header no-print">
     <div class="brand-container">
@@ -151,6 +209,18 @@
       <button id="exportPdfBtn" class="btn btn-success btn-sm">🖨️ Export PDF / Print</button>
     </div>
   </header>
+
+  <!-- ASSIGNMENT BANNER (shown when faculty opens page via assignment link) -->
+  <div id="assignmentBanner"
+    style="display:none; background:linear-gradient(135deg,#0f2d59,#1e4d8a); color:#fff; padding:0.75rem 2rem; display:none; align-items:center; gap:1rem; flex-wrap:wrap;">
+    <span style="font-size:1.1rem;">📋</span>
+    <div>
+      <div style="font-weight:700; font-size:0.92rem;">Question Paper Assignment</div>
+      <div style="font-size:0.8rem; opacity:0.9;">You have been assigned to prepare the QP for <b
+          id="bannerCourseCode"></b> — <b id="bannerCourseName"></b> (<span id="bannerExamType"></span>). Course details
+        are pre-filled and locked.</div>
+    </div>
+  </div>
 
   <!-- MAIN CONTAINER -->
   <main class="app-container">
@@ -184,12 +254,15 @@
         </div>
         <div class="form-grid">
           <div class="form-group">
-            <label for="courseCodeInput">Course Code</label>
+            <label for="courseCodeInput">Course Code <span id="courseLockedNote"
+                style="display:none;font-size:0.7rem;color:var(--warning);font-weight:700;">🔒 Locked by
+                Assignment</span></label>
             <input type="text" id="courseCodeInput" class="form-control" placeholder="e.g. CSA4202, CSE1020, SOIS301"
               value="">
           </div>
           <div class="form-group">
-            <label for="courseNameInput">Course Name</label>
+            <label for="courseNameInput">Course Name <span id="courseNameLockedNote"
+                style="display:none;font-size:0.7rem;color:var(--warning);font-weight:700;">🔒 Locked</span></label>
             <input type="text" id="courseNameInput" class="form-control"
               placeholder="e.g. Advanced Software Engineering" value="">
           </div>
@@ -213,6 +286,29 @@
           <div class="form-group">
             <label for="durationInput">Time / Duration</label>
             <input type="text" id="durationInput" class="form-control" placeholder="e.g. 1 Hour" value="">
+          </div>
+        </div>
+      </section>
+
+      <!-- CO Module Upload for Auto-Detection -->
+      <section class="panel" id="coModulePanel">
+        <div class="panel-header">
+          <h2 class="panel-title">🧠 CO Module Upload — Auto-Detect Bloom's Level &amp; CO</h2>
+          <button id="toggleCoModuleBtn" class="btn btn-secondary btn-sm">▼ Show</button>
+        </div>
+        <div id="coModuleBody" style="display:none; padding:1rem;">
+          <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:0.75rem;">
+            Paste your <b>syllabus / CO mapping</b> below. Format each CO on a separate line:<br>
+            <code
+              style="font-size:0.78rem; background:var(--background); padding:2px 6px; border-radius:4px;">CO1: define, list, state, identify, recall</code><br>
+            Once uploaded, the system will <b>auto-suggest Bloom's Level &amp; CO</b> as you type questions.
+          </p>
+          <textarea id="coModuleText" class="paste-area" style="min-height:120px;"
+            placeholder="CO1: define, state, list, recall&#10;CO2: explain, describe, classify&#10;CO3: apply, solve, demonstrate, compute&#10;CO4: analyze, compare, distinguish&#10;CO5: evaluate, justify, design, create"></textarea>
+          <div style="display:flex; gap:0.75rem; margin-top:0.75rem; align-items:center;">
+            <button id="parseCoModuleBtn" class="btn btn-accent btn-sm">🧩 Load CO Mapping &amp; Enable
+              Auto-Detect</button>
+            <span id="coModuleStatus" style="font-size:0.78rem; color:var(--text-muted);"></span>
           </div>
         </div>
       </section>
@@ -366,6 +462,7 @@ PART B
   <script>if (window.emailjs && window.SOIS_CONFIG) emailjs.init({ publicKey: window.SOIS_CONFIG.EMAILJS_PUBLIC_KEY });</script>
   <script src="js/store.js"></script>
   <script src="js/logo-data.js"></script>
+  <script src="js/email-service.js"></script>
   <script src="js/qp-builder.js"></script>
   <script src="js/docx-exporter.js"></script>
   <script src="js/faculty.js"></script>
