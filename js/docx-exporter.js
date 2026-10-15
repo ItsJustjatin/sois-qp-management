@@ -225,7 +225,7 @@ class QPExporter {
           @page { size: A4 portrait; margin: 15mm; }
           body {
             font-family: 'Times New Roman', Times, serif;
-            font-size: 11pt;
+            font-size: 10.5pt;
             line-height: 1.3;
             color: #000000;
             background: #ffffff;
@@ -234,12 +234,21 @@ class QPExporter {
           }
           .title-header { text-align: center; font-weight: bold; font-size: 13pt; text-transform: uppercase; }
           .sub-header { text-align: center; font-weight: bold; font-size: 11pt; text-transform: uppercase; margin-bottom: 12px; }
-          table { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
-          td, th { border: 1pt solid #000000; padding: 5pt 7pt; vertical-align: top; font-size: 10.5pt; color: #000; }
-          .qp-part-title, .part-header { font-weight: bold; font-size: 11pt; margin-top: 14px; margin-bottom: 6px; display: flex; justify-content: space-between; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+          td, th { border: 1pt solid #000000; padding: 3pt 5pt; vertical-align: top; font-size: 9.5pt; color: #000; }
+          .qp-part-title, .part-header {
+            font-weight: bold; font-size: 10pt; margin-top: 10px; margin-bottom: 4px;
+            display: flex; justify-content: space-between;
+          }
+          /* ── FRONT / BACK: Part B always starts on a new page (back of sheet) ── */
+          .part-b-start, .part-b-header {
+            page-break-before: always !important;
+            break-before: page !important;
+            padding-top: 4mm;
+          }
           .text-center { text-align: center; }
           .font-bold { font-weight: bold; }
-          img { max-width: 300px; max-height: 180px; }
+          img { max-width: 280px; max-height: 160px; }
         </style>
       </head>
       <body>
@@ -296,7 +305,7 @@ class QPExporter {
       </table>
       <div class="part-header">Part A: Answer ALL the Questions. Each question carries 2 marks. <span style="float:right;">10M</span></div>
       <table><thead><tr><th style="width:8%;">Q.No</th><th style="width:66%;">Question Text</th><th style="width:12%;">Marks</th><th style="width:7%;">L</th><th style="width:7%;">CO</th></tr></thead><tbody>${partAHtml}</tbody></table>
-      <div class="part-header">Part B: Answer any two of the Questions. <span style="float:right;">20M</span></div>
+      <div class="part-header part-b-header">Part B: Answer any two of the Questions. <span style="float:right;">20M</span></div>
       <table><thead><tr><th style="width:8%;">Q.No</th><th style="width:66%;">Question Text</th><th style="width:12%;">Marks</th><th style="width:7%;">L</th><th style="width:7%;">CO</th></tr></thead><tbody>${partBHtml}</tbody></table>
     `;
   }

@@ -8,6 +8,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const builder = window.builderInstance;
   const exporter = window.QPExporter;
 
+  // Assignment workflow state (declared at top so logout can clear them)
+  let _activeAssignmentId = null;
+  let _setsSubmitted = [];
+
   // DOM Elements - Auth & Forms
   const authOverlay = document.getElementById('authOverlay');
   const tabLoginBtn = document.getElementById('tabLoginBtn');
@@ -237,6 +241,12 @@ document.addEventListener('DOMContentLoaded', () => {
     store.logout();
     authOverlay.style.display = 'flex';
     userProfileBadge.style.display = 'none';
+    const ap = document.getElementById('myAssignmentsPanel');
+    if (ap) ap.style.display = 'none';
+    const ab = document.getElementById('assignmentBanner');
+    if (ab) ab.style.display = 'none';
+    _activeAssignmentId = null;
+    _setsSubmitted = [];
   });
 
   function onLoginSuccess(user) {
@@ -248,6 +258,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     facultyNameInput.value = user.name;
     facultyPunivInput.value = user.punivId;
+
+    // Load assignments panel for this faculty
+    loadFacultyAssignments(user.punivId);
   }
 
   // Dynamic Metadata Input Listeners
@@ -752,8 +765,7 @@ document.addEventListener('DOMContentLoaded', () => {
   })();
 
   // ── MY ASSIGNMENTS PANEL ─────────────────────────────────────────────────
-  let _activeAssignmentId = null;
-  let _setsSubmitted = [];   // ['SET A', 'SET B', ...]
+  // _activeAssignmentId and _setsSubmitted declared at top of DOMContentLoaded
 
   async function loadFacultyAssignments(punivId) {
     const panel = document.getElementById('myAssignmentsPanel');
