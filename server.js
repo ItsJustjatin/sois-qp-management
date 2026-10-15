@@ -317,11 +317,14 @@ const server = http.createServer((req, res) => {
     req.on('data', c => body += c);
     req.on('end', () => {
       try {
-        const { id, status } = JSON.parse(body);
+        const { id, status, rejectionReason, setsSubmitted } = JSON.parse(body);
         const assignments = readJson(ASSIGNMENTS_FILE);
         const item = assignments.find(a => a.id === id);
         if (item) {
           item.status = status;
+          if (rejectionReason !== undefined) item.rejectionReason = rejectionReason;
+          if (setsSubmitted !== undefined) item.setsSubmitted = setsSubmitted;
+          item.updatedAt = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
           writeJson(ASSIGNMENTS_FILE, assignments);
         }
         res.writeHead(200, { 'Content-Type': 'application/json' });

@@ -305,6 +305,14 @@
 
       <!-- Assignments List -->
       <div style="overflow-x:auto; padding:0 1.25rem 1.25rem;">
+        <div style="display:flex; gap:0.65rem; margin-bottom:0.85rem; flex-wrap:wrap; align-items:center;">
+          <span style="font-size:0.8rem; font-weight:700; color:var(--text-muted);">📥 Download Tracking Excel:</span>
+          <button onclick="exportAssignmentsToExcel('all')" class="btn btn-secondary btn-sm">📊 All Assignments</button>
+          <button onclick="exportAssignmentsToExcel('pending')" class="btn btn-sm"
+            style="background:#92400e;color:#fff;">⏳ Pending</button>
+          <button onclick="exportAssignmentsToExcel('completed')" class="btn btn-sm"
+            style="background:#065f46;color:#fff;">✅ Completed</button>
+        </div>
         <table class="data-table" id="assignmentsTable">
           <thead>
             <tr>
@@ -486,6 +494,7 @@
   <script src="js/logo-data.js"></script>
   <script src="js/email-service.js"></script>
   <script src="js/docx-exporter.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <script src="js/manager.js"></script>
 </body>
 

@@ -732,3 +732,64 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => { assignMsg.style.display = 'none'; }, 6000);
   }
 });
+
+/* ==========================================================================
+   Excel Export — Manager Tracking (uses SheetJS)
+   ========================================================================== */
+window.exportAssignmentsToExcel = async function (filter) {
+  if (typeof XLSX === 'undefined') {
+    alert('SheetJS library not loaded. Please refresh the page and try again.');
+    return;
+  }
+  try {
+    const res = await fetch('/api/assignments');
+    const all = await res.json();
+
+    let data = all;
+    let label = 'All';
+    if (filter === 'pending') {
+      data = all.filter(a => ['Pending', 'Accepted', 'In Progress'].includes(a.status));
+      label = 'Pending';
+    } else if (filter === 'completed') {
+      data = all.filter(a => ['Submitted', 'Approved'].includes(a.status));
+      label = 'Completed';
+    }
+
+    if (data.length === 0) {
+      alert(`No ${label} assignments found.`);
+      return;
+    }
+
+    const rows = data.map((a, i) => ({
+      '#': i + 1,
+      'Faculty Name': a.facultyName || '',
+      'PUNIV ID': a.punivId || '',
+      'Faculty Email': a.facultyEmail || '',
+      'Course Code': a.courseCode || '',
+      'Course Name': a.courseName || '',
+      'Exam Type': a.examType || '',
+      'Status': a.status || '',
+      'Sets Submitted': (a.setsSubmitted || []).join(', ') || '—',
+      'Assigned On': a.assignedAt || '',
+      'Last Updated': a.updatedAt || ''
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+
+    // Column widths
+    ws['!cols'] = [
+      { wch: 4 }, { wch: 22 }, { wch: 14 }, { wch: 30 },
+      { wch: 12 }, { wch: 28 }, { wch: 16 }, { wch: 16 },
+      { wch: 20 }, { wch: 22 }, { wch: 22 }
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, `${label} Assignments`);
+
+    const today = new Date().toLocaleDateString('en-IN').replace(/\//g, '-');
+    XLSX.writeFile(wb, `SOIS_QP_${label}_Assignments_${today}.xlsx`);
+  } catch (e) {
+    alert('Failed to fetch assignments. Please try again.');
+    console.error(e);
+  }
+};

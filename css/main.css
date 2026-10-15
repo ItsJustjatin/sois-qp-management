@@ -690,4 +690,55 @@ body {
     border: 1pt solid #000000 !important;
     color: #000000 !important;
   }
+
+  /* ── FRONT / BACK PRINT LAYOUT ──────────────────────────────────────────
+     Part A = FRONT of sheet   |   Part B = BACK of sheet
+     Each set = 2 physical pages. 3 sets = 6 printed pages total.
+     ────────────────────────────────────────────────────────────────────── */
+
+  /* Force a page break BEFORE Part B (starts it on the back side) */
+  .part-b-start {
+    page-break-before: always !important;
+    break-before: page !important;
+    padding-top: 4mm !important;
+  }
+
+  /* Force a page break between sets (Set A → Set B → Set C) */
+  .qp-set-separator {
+    page-break-before: always !important;
+    break-before: page !important;
+  }
+
+  /* Compact font & spacing for clean single-side fit */
+  .preview-paper {
+    font-size: 9.5pt !important;
+    line-height: 1.25 !important;
+    padding: 8mm !important;
+  }
+
+  .qp-header-title {
+    font-size: 11pt !important;
+  }
+
+  .qp-school-title {
+    font-size: 9pt !important;
+  }
+
+  .qp-meta-table td {
+    padding: 2pt 4pt !important;
+    font-size: 9pt !important;
+  }
+
+  .qp-part-title {
+    margin: 4pt 0 3pt !important;
+    padding: 3pt 5pt !important;
+    font-size: 9pt !important;
+  }
+
+  .qp-table td,
+  .qp-table th {
+    padding: 2pt 4pt !important;
+    font-size: 9pt !important;
+    line-height: 1.2 !important;
+  }
 }

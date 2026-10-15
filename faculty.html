@@ -212,13 +212,43 @@
 
   <!-- ASSIGNMENT BANNER (shown when faculty opens page via assignment link) -->
   <div id="assignmentBanner"
-    style="display:none; background:linear-gradient(135deg,#0f2d59,#1e4d8a); color:#fff; padding:0.75rem 2rem; display:none; align-items:center; gap:1rem; flex-wrap:wrap;">
+    style="display:none; background:linear-gradient(135deg,#0f2d59,#1e4d8a); color:#fff; padding:0.75rem 2rem; align-items:center; gap:1rem; flex-wrap:wrap;">
     <span style="font-size:1.1rem;">📋</span>
     <div>
-      <div style="font-weight:700; font-size:0.92rem;">Question Paper Assignment</div>
-      <div style="font-size:0.8rem; opacity:0.9;">You have been assigned to prepare the QP for <b
-          id="bannerCourseCode"></b> — <b id="bannerCourseName"></b> (<span id="bannerExamType"></span>). Course details
-        are pre-filled and locked.</div>
+      <div style="font-weight:700; font-size:0.92rem;">Question Paper Assignment — Prepare Mode Active</div>
+      <div style="font-size:0.8rem; opacity:0.9;">Preparing QP for <b id="bannerCourseCode"></b> — <b
+          id="bannerCourseName"></b> (<span id="bannerExamType"></span>). Course details are locked.</div>
+    </div>
+  </div>
+
+  <!-- MY ASSIGNMENTS PANEL -->
+  <div id="myAssignmentsPanel" style="display:none;" class="no-print">
+    <div
+      style="background:linear-gradient(135deg,#f0f7ff,#e8f0fe); border-bottom:2px solid var(--primary); padding:1.25rem 2rem;">
+      <h2 style="font-size:1rem; font-weight:800; color:var(--primary); margin:0 0 0.85rem;">📋 My Question Paper
+        Assignments</h2>
+      <div id="assignmentsListContainer"></div>
+      <div id="noAssignmentsMsg" style="display:none; color:var(--text-muted); font-size:0.85rem; padding:0.5rem 0;">No
+        active assignments found. You can freely prepare a question paper below.</div>
+    </div>
+  </div>
+
+  <!-- REJECT REASON MODAL -->
+  <div id="rejectReasonModal"
+    style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:10700; align-items:center; justify-content:center;">
+    <div
+      style="background:var(--card-bg); border-radius:16px; padding:2rem; width:90%; max-width:440px; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+      <h3 style="margin:0 0 1rem; font-size:1rem; color:var(--danger);">❌ Reject Assignment</h3>
+      <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:0.85rem;">Please provide a reason for
+        rejection (optional):</p>
+      <textarea id="rejectReasonInput"
+        style="width:100%; height:80px; border:1px solid var(--border-color); border-radius:8px; padding:0.6rem; font-size:0.85rem; resize:vertical;"
+        placeholder="e.g. Wrong subject assigned, please reassign..."></textarea>
+      <div style="display:flex; gap:0.75rem; margin-top:1rem; justify-content:flex-end;">
+        <button id="rejectCancelBtn" class="btn btn-secondary btn-sm">Cancel</button>
+        <button id="rejectConfirmBtn" class="btn btn-sm" style="background:#dc2626; color:#fff;">❌ Confirm
+          Rejection</button>
+      </div>
     </div>
   </div>
 
@@ -369,6 +399,17 @@ PART B
           </h3>
           <div id="partBContainer"></div>
         </div>
+
+        <!-- Per-Set Bottom Submit Buttons (Assignment Mode) -->
+        <div id="setSubmitBtns"
+          style="display:none; margin-top:1.25rem; padding:1rem; background:var(--primary-light); border-radius:10px; border:1px solid var(--primary); text-align:center;">
+          <button id="submitSetABtn" class="btn btn-success" style="display:none;">📤 Submit Set A to Manager</button>
+          <button id="submitSetBBtn" class="btn btn-success" style="display:none;">📤 Submit Set B to Manager</button>
+          <button id="submitSetCBtn" class="btn btn-success" style="display:none;">📤 Submit All Sets — Mark
+            Complete</button>
+          <p style="font-size:0.78rem; color:var(--text-muted); margin-top:0.5rem; margin-bottom:0;">Complete each set
+            in sequence. Next set unlocks after submission.</p>
+        </div>
       </section>
 
     </div>
@@ -423,7 +464,7 @@ PART B
           </table>
 
           <!-- Part B Section -->
-          <div class="qp-part-title">
+          <div class="qp-part-title part-b-start">
             <span>Part B: Answer any two of the Questions.</span>
             <span class="text-right">2Qx 10M = 20M</span>
           </div>

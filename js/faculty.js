@@ -751,7 +751,117 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (e) { console.warn('Assignment lookup failed:', e); }
   })();
 
-  function applyAssignmentLock(assignment) {
+  // ── MY ASSIGNMENTS PANEL ─────────────────────────────────────────────────
+  let _activeAssignmentId = null;
+  let _setsSubmitted = [];   // ['SET A', 'SET B', ...]
+
+  async function loadFacultyAssignments(punivId) {
+    const panel = document.getElementById('myAssignmentsPanel');
+    const container = document.getElementById('assignmentsListContainer');
+    const noMsg = document.getElementById('noAssignmentsMsg');
+    if (!panel || !container) return;
+
+    try {
+      const res = await fetch(`/api/assignments/faculty?punivId=${encodeURIComponent(punivId)}`);
+      const assignments = await res.json();
+
+      // Only show Pending or Accepted assignments
+      const active = assignments.filter(a => ['Pending', 'Accepted'].includes(a.status));
+
+      panel.style.display = 'block';
+
+      if (active.length === 0) {
+        if (noMsg) noMsg.style.display = 'block';
+        container.innerHTML = '';
+        return;
+      }
+
+      if (noMsg) noMsg.style.display = 'none';
+      container.innerHTML = active.map(a => {
+        const isPending = a.status === 'Pending';
+        const isAccepted = a.status === 'Accepted';
+        return `
+        <div class="assignment-card" style="background:#fff; border:1px solid var(--border-color); border-radius:12px; padding:1rem 1.25rem; margin-bottom:0.85rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+          <div style="flex:1; min-width:200px;">
+            <div style="font-weight:700; font-size:0.95rem; color:var(--primary);">${a.courseCode} — ${a.courseName}</div>
+            <div style="font-size:0.8rem; color:var(--text-muted); margin-top:2px;">${a.examType} &nbsp;|&nbsp; Assigned by: ${a.managerName || 'Manager'} &nbsp;|&nbsp; ${a.assignedAt}</div>
+            <div style="margin-top:4px;">
+              <span style="display:inline-block; padding:2px 10px; border-radius:20px; font-size:0.75rem; font-weight:700; background:${isPending ? '#fef3c7' : '#dcfce7'}; color:${isPending ? '#92400e' : '#166534'};">
+                ${isPending ? '⏳ Pending' : '✅ Accepted'}
+              </span>
+            </div>
+          </div>
+          <div style="display:flex; gap:0.5rem; flex-shrink:0;">
+            ${isPending ? `
+              <button onclick="window.acceptAssignment('${a.id}')" class="btn btn-success btn-sm">✅ Accept</button>
+              <button onclick="window.openRejectModal('${a.id}')" class="btn btn-sm" style="background:#dc2626;color:#fff;">❌ Reject</button>
+            ` : ''}
+            ${isAccepted ? `
+              <button onclick="window.enterPrepareMode(${JSON.stringify(a).replace(/"/g, '&quot;')})" class="btn btn-primary btn-sm">📝 Prepare QP</button>
+            ` : ''}
+          </div>
+        </div>`;
+      }).join('');
+
+      // If an assignment was just resumed from prepare mode, re-enter it
+      if (window._activeAssignment && active.find(a => a.id === window._activeAssignment.id && a.status === 'Accepted')) {
+        setTimeout(() => window.enterPrepareMode(window._activeAssignment), 300);
+      }
+
+    } catch (e) {
+      console.warn('loadFacultyAssignments failed:', e);
+    }
+  }
+
+  // Accept assignment
+  window.acceptAssignment = async function (id) {
+    try {
+      await fetch('/api/update-assignment-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status: 'Accepted' })
+      });
+      const user = store.getSavedAuth();
+      if (user) loadFacultyAssignments(user.punivId);
+    } catch (e) { alert('Network error. Please try again.'); }
+  };
+
+  // Reject modal
+  let _rejectTargetId = null;
+  window.openRejectModal = function (id) {
+    _rejectTargetId = id;
+    const modal = document.getElementById('rejectReasonModal');
+    if (modal) modal.style.display = 'flex';
+    const inp = document.getElementById('rejectReasonInput');
+    if (inp) inp.value = '';
+  };
+
+  const rejectCancelBtn = document.getElementById('rejectCancelBtn');
+  const rejectConfirmBtn = document.getElementById('rejectConfirmBtn');
+  const rejectReasonModal = document.getElementById('rejectReasonModal');
+
+  if (rejectCancelBtn) rejectCancelBtn.addEventListener('click', () => { if (rejectReasonModal) rejectReasonModal.style.display = 'none'; });
+  if (rejectConfirmBtn) rejectConfirmBtn.addEventListener('click', async () => {
+    const reason = (document.getElementById('rejectReasonInput') || { value: '' }).value.trim();
+    try {
+      await fetch('/api/update-assignment-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: _rejectTargetId, status: 'Rejected', rejectionReason: reason })
+      });
+      if (rejectReasonModal) rejectReasonModal.style.display = 'none';
+      const user = store.getSavedAuth();
+      if (user) loadFacultyAssignments(user.punivId);
+    } catch (e) { alert('Network error. Please try again.'); }
+  });
+
+  // Enter prepare mode — lock fields and show sequential set submit buttons
+  window.enterPrepareMode = function (assignment) {
+    _activeAssignmentId = assignment.id;
+    _setsSubmitted = assignment.setsSubmitted || [];
+    window._activeAssignment = assignment;
+
+    // Lock course metadata
     const ccInput = document.getElementById('courseCodeInput');
     const cnInput = document.getElementById('courseNameInput');
     const ccNote = document.getElementById('courseLockedNote');
@@ -763,11 +873,114 @@ document.addEventListener('DOMContentLoaded', () => {
     if (ccNote) ccNote.style.display = 'inline';
     if (cnNote) cnNote.style.display = 'inline';
     if (etInput && !etInput.value) etInput.value = assignment.examType;
+
+    // Hide top submit button, show bottom sequential submit
+    const topBtn = document.getElementById('submitQpBtn');
+    if (topBtn) topBtn.style.display = 'none';
+
+    // Show assignment banner
+    const banner = document.getElementById('assignmentBanner');
+    if (banner) {
+      document.getElementById('bannerCourseCode').textContent = assignment.courseCode;
+      document.getElementById('bannerCourseName').textContent = assignment.courseName;
+      document.getElementById('bannerExamType').textContent = assignment.examType;
+      banner.style.display = 'flex';
+    }
+
+    // Show set submit buttons area
+    const setSubmitBtns = document.getElementById('setSubmitBtns');
+    if (setSubmitBtns) setSubmitBtns.style.display = 'block';
+
+    // Activate the first incomplete set tab
+    const tabs = document.querySelectorAll('.set-tab');
+    let nextSet = 'SET A';
+    if (_setsSubmitted.includes('SET A') && !_setsSubmitted.includes('SET B')) nextSet = 'SET B';
+    else if (_setsSubmitted.includes('SET B') && !_setsSubmitted.includes('SET C')) nextSet = 'SET C';
+    tabs.forEach(t => {
+      const isLocked = (t.dataset.set === 'SET B' && !_setsSubmitted.includes('SET A')) ||
+        (t.dataset.set === 'SET C' && !_setsSubmitted.includes('SET B'));
+      t.disabled = isLocked;
+      t.style.opacity = isLocked ? '0.45' : '1';
+      if (t.dataset.set === nextSet) t.click();
+    });
+
+    refreshSetSubmitBtn(nextSet);
+
+    // Scroll to QP builder
+    document.getElementById('partAContainer')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  function refreshSetSubmitBtn(activeSet) {
+    const btnA = document.getElementById('submitSetABtn');
+    const btnB = document.getElementById('submitSetBBtn');
+    const btnC = document.getElementById('submitSetCBtn');
+    if (btnA) btnA.style.display = 'none';
+    if (btnB) btnB.style.display = 'none';
+    if (btnC) btnC.style.display = 'none';
+
+    if (!_activeAssignmentId) return;
+    if (activeSet === 'SET A' && !_setsSubmitted.includes('SET A') && btnA) btnA.style.display = 'inline-flex';
+    if (activeSet === 'SET B' && !_setsSubmitted.includes('SET B') && btnB) btnB.style.display = 'inline-flex';
+    if (activeSet === 'SET C' && !_setsSubmitted.includes('SET C') && btnC) btnC.style.display = 'inline-flex';
   }
 
-  // Patch onLoginSuccess to apply assignment lock after login
-  const _orig = onLoginSuccess;
-  window._origOnLoginSuccess = _orig;
+  // Update which button shows when user switches tabs
+  document.querySelectorAll('.set-tab').forEach(t => {
+    t.addEventListener('click', () => {
+      if (_activeAssignmentId) setTimeout(() => refreshSetSubmitBtn(t.dataset.set), 50);
+    });
+  });
+
+  async function submitSet(setLabel, isLast) {
+    const btn = document.getElementById(`submitSet${setLabel.replace('SET ', '')}Btn`);
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Submitting...'; }
+
+    _setsSubmitted = [...new Set([..._setsSubmitted, setLabel])];
+
+    const newStatus = isLast ? 'Submitted' : 'In Progress';
+    try {
+      await fetch('/api/update-assignment-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: _activeAssignmentId, status: newStatus, setsSubmitted: _setsSubmitted })
+      });
+
+      if (isLast) {
+        alert('✅ All sets submitted! The manager has been notified.');
+        // Trigger the normal QP submit to capture the paper
+        const topBtn = document.getElementById('submitQpBtn');
+        if (topBtn) { topBtn.style.display = 'inline-flex'; topBtn.click(); }
+      } else {
+        // Unlock next set tab
+        const nextSet = setLabel === 'SET A' ? 'SET B' : 'SET C';
+        document.querySelectorAll('.set-tab').forEach(t => {
+          if (t.dataset.set === nextSet) { t.disabled = false; t.style.opacity = '1'; t.click(); }
+        });
+        refreshSetSubmitBtn(nextSet);
+        if (btn) { btn.disabled = false; }
+      }
+    } catch (e) {
+      alert('Network error. Please try again.');
+      if (btn) { btn.disabled = false; btn.textContent = `📤 Submit ${setLabel} to Manager`; }
+    }
+  }
+
+  const submitSetABtn = document.getElementById('submitSetABtn');
+  const submitSetBBtn = document.getElementById('submitSetBBtn');
+  const submitSetCBtn = document.getElementById('submitSetCBtn');
+  if (submitSetABtn) submitSetABtn.addEventListener('click', () => submitSet('SET A', false));
+  if (submitSetBBtn) submitSetBBtn.addEventListener('click', () => submitSet('SET B', false));
+  if (submitSetCBtn) submitSetCBtn.addEventListener('click', () => submitSet('SET C', true));
+
+  // Load assignments on login
+  function applyAssignmentLock(assignment) {
+    window._activeAssignment = assignment;
+    window.enterPrepareMode(assignment);
+  }
+
+  // Reload assignments after login
+  const origOnLoginSuccess = window.__savedOnLoginSuccess;
+  window.__savedOnLoginSuccess = origOnLoginSuccess;
 
   // ── CO MODULE PARSING & BLOOM/CO AUTO-DETECT ────────────────────────────
   const toggleCoModuleBtn = document.getElementById('toggleCoModuleBtn');
@@ -776,7 +989,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const coModuleText = document.getElementById('coModuleText');
   const coModuleStatus = document.getElementById('coModuleStatus');
 
-  // Bloom's level verb map (L1→L6)
   const BLOOM_VERBS = {
     L1: ['define', 'list', 'state', 'recall', 'name', 'identify', 'label', 'match', 'recognize', 'memorize'],
     L2: ['explain', 'describe', 'summarize', 'classify', 'illustrate', 'interpret', 'paraphrase', 'discuss', 'restate'],
@@ -786,7 +998,6 @@ document.addEventListener('DOMContentLoaded', () => {
     L6: ['create', 'design', 'build', 'formulate', 'develop', 'generate', 'compose', 'plan', 'produce']
   };
 
-  // Parsed CO keyword map: { 'CO1': ['define','list',...], 'CO2': [...] }
   let coKeywordMap = {};
 
   if (toggleCoModuleBtn && coModuleBody) {
@@ -797,20 +1008,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  /**
-   * Parse CO module text like:
-   *   CO1: define, list, state, recall
-   *   CO2: explain, describe, summarize
-   */
   function parseCOModule(text) {
     const map = {};
-    const lines = text.split('\n');
-    lines.forEach(line => {
+    text.split('\n').forEach(line => {
       const m = line.match(/^(CO\d+)\s*[:\-]\s*(.+)/i);
       if (m) {
-        const co = m[1].toUpperCase();
-        const kws = m[2].split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
-        map[co] = kws;
+        map[m[1].toUpperCase()] = m[2].split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
       }
     });
     return map;
@@ -819,41 +1022,24 @@ document.addEventListener('DOMContentLoaded', () => {
   if (parseCoModuleBtn) {
     parseCoModuleBtn.addEventListener('click', () => {
       const text = coModuleText ? coModuleText.value.trim() : '';
-      if (!text) {
-        if (coModuleStatus) coModuleStatus.textContent = '⚠️ Please paste your CO mapping first.';
-        return;
-      }
+      if (!text) { if (coModuleStatus) coModuleStatus.textContent = '⚠️ Please paste your CO mapping first.'; return; }
       coKeywordMap = parseCOModule(text);
       const coCount = Object.keys(coKeywordMap).length;
-      if (coCount === 0) {
-        if (coModuleStatus) coModuleStatus.textContent = '❌ Could not parse any COs. Check format.';
-        return;
-      }
-      if (coModuleStatus) {
-        coModuleStatus.textContent = `✅ Loaded ${coCount} COs. Auto-detection active on question inputs.`;
-        coModuleStatus.style.color = 'var(--success)';
-      }
-      window.soisCoKeywordMap = coKeywordMap;  // Make globally accessible
+      if (coCount === 0) { if (coModuleStatus) coModuleStatus.textContent = '❌ Could not parse any COs. Check format.'; return; }
+      if (coModuleStatus) { coModuleStatus.textContent = `✅ Loaded ${coCount} COs. Auto-detection active.`; coModuleStatus.style.color = 'var(--success)'; }
+      window.soisCoKeywordMap = coKeywordMap;
     });
   }
 
-  /**
-   * Auto-detect CO and Bloom's level from a question text string.
-   * Returns { co: 'CO1', bloom: 'L2' } or null if no match.
-   */
   window.autoDetectCOAndBloom = function (questionText) {
     if (!questionText) return null;
     const text = questionText.toLowerCase();
-
-    // Detect Bloom level by first-word verb match
     let detectedBloom = null;
     for (const [level, verbs] of Object.entries(BLOOM_VERBS)) {
       if (verbs.some(v => text.startsWith(v) || text.includes(' ' + v + ' ') || text.includes(' ' + v + '.'))) {
         detectedBloom = level; break;
       }
     }
-
-    // Detect CO by keyword overlap
     let detectedCO = null;
     const km = window.soisCoKeywordMap || coKeywordMap;
     if (Object.keys(km).length > 0) {
@@ -863,19 +1049,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (score > bestScore) { bestScore = score; detectedCO = co; }
       }
     }
-
     if (!detectedBloom && !detectedCO) return null;
     return { bloom: detectedBloom || null, co: detectedCO || null };
   };
 
-  // Auto-detect on question text blur in Part A / Part B inputs
   document.addEventListener('change', (e) => {
     const inp = e.target;
     if (!inp.classList.contains('q-text-input') && !inp.id.includes('qText')) return;
     const detect = window.autoDetectCOAndBloom(inp.value);
     if (!detect) return;
-
-    // Find sibling Bloom and CO selects within the same question card
     const card = inp.closest('.question-card') || inp.closest('tr') || inp.parentElement;
     if (!card) return;
     const bloomSel = card.querySelector('[id*="Bloom"], [class*="bloom-select"], select[name*="bloom"]');
@@ -884,9 +1066,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (coSel && detect.co) coSel.value = detect.co;
   });
 
-  // Also apply assignment lock now if post-login assignment is set
-  if (window._postLoginAssignment) {
-    applyAssignmentLock(window._postLoginAssignment);
+  // Load assignments after successful login (hook into onLoginSuccess)
+  // We patch the DOMContentLoaded-resolved closure via a known saved-auth check
+  const _savedUser = store.getSavedAuth();
+  if (_savedUser) {
+    loadFacultyAssignments(_savedUser.punivId);
+    if (window._postLoginAssignment) applyAssignmentLock(window._postLoginAssignment);
   }
 });
 
