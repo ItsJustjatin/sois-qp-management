@@ -24,7 +24,7 @@ window.SOISEmailService = {
     sendOTP(email, name, otp) {
         const cfg = this._cfg();
         return this._send(cfg.EMAILJS_TEMPLATE_ID, {
-            to_email: email, to_name: name, otp_code: otp
+            to_email: email, email: email, to_name: name, otp_code: otp
         });
     },
 
@@ -33,7 +33,7 @@ window.SOISEmailService = {
         const cfg = this._cfg();
         const templateId = cfg.EMAILJS_FORGOT_TEMPLATE_ID || cfg.EMAILJS_TEMPLATE_ID;
         return this._send(templateId, {
-            to_email: email, to_name: name, otp_code: otp,
+            to_email: email, email: email, to_name: name, otp_code: otp,
             subject: 'SOIS QP System – Password Reset OTP'
         });
     },
@@ -44,6 +44,7 @@ window.SOISEmailService = {
         const templateId = cfg.EMAILJS_ASSIGNMENT_TEMPLATE_ID || cfg.EMAILJS_TEMPLATE_ID;
         return this._send(templateId, {
             to_email: email,
+            email: email,
             to_name: name,
             course_code: courseCode,
             course_name: courseName,
@@ -60,6 +61,7 @@ window.SOISEmailService = {
         const templateId = cfg.EMAILJS_REJECTION_TEMPLATE_ID || cfg.EMAILJS_TEMPLATE_ID;
         return this._send(templateId, {
             to_email: email,
+            email: email,
             to_name: name,
             course_code: courseCode,
             course_name: courseName,
