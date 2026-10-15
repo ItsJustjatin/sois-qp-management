@@ -21,7 +21,7 @@ window.SOIS_CONFIG = {
     EMAILJS_PUBLIC_KEY: 'uzY3ybC81z3hBVlue',   // from Account → General
     // New email templates — create these in emailjs.com and paste IDs here:
     EMAILJS_FORGOT_TEMPLATE_ID: 'template_p92sk9z',     // Forgot password OTP (can reuse OTP template)
-    EMAILJS_ASSIGNMENT_TEMPLATE_ID: 'template_assign',  // QP assignment notification
+    EMAILJS_ASSIGNMENT_TEMPLATE_ID: 'template_po6plfa',  // QP assignment notification
     EMAILJS_REJECTION_TEMPLATE_ID: 'template_reject',   // QP rejection notification
 
     // ─── SMS OTP (via Netlify Function + Twilio) ──────────────────────────────
