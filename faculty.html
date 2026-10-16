@@ -320,6 +320,79 @@
         </div>
       </section>
 
+      <!-- QP STRUCTURE CONFIGURATION -->
+      <section class="panel" id="qpStructurePanel"
+        style="border:2px solid var(--accent); background:linear-gradient(135deg,var(--primary-light),var(--card-bg));">
+        <div class="panel-header">
+          <h2 class="panel-title" style="color:var(--primary);">⚙️ Question Paper Structure</h2>
+          <button id="toggleQpStructureBtn" class="btn btn-secondary btn-sm">▼ Show / Edit</button>
+        </div>
+        <div id="qpStructureBody" style="display:none; padding:1.25rem;">
+          <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:1rem;">
+            Set how many questions each part has, marks per question, and attempt rule. Click <strong>Apply
+              Structure</strong> to regenerate question cards.
+          </p>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem;">
+            <!-- Part A Config -->
+            <div
+              style="background:var(--card-bg); border:1px solid var(--border-color); border-radius:12px; padding:1.1rem;">
+              <div style="font-weight:800; color:var(--primary); font-size:0.95rem; margin-bottom:0.85rem;">📄 Part A
+              </div>
+              <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+                <div class="form-group">
+                  <label>No. of Questions</label>
+                  <input type="number" id="cfgPartACount" class="form-control" value="5" min="1" max="20">
+                </div>
+                <div class="form-group">
+                  <label>Marks per Question</label>
+                  <input type="number" id="cfgPartAMarks" class="form-control" value="2" min="1" max="20">
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Attempt Rule</label>
+                <select id="cfgPartAAttemptType" class="form-control">
+                  <option value="all" selected>Answer ALL Questions</option>
+                  <option value="any">Answer ANY N Questions</option>
+                </select>
+              </div>
+              <div class="form-group" id="cfgPartAAttemptNWrapper" style="display:none;">
+                <label>Students must attempt (N)</label>
+                <input type="number" id="cfgPartAAttemptN" class="form-control" value="3" min="1" max="20">
+              </div>
+              <div style="margin-top:0.5rem; font-size:0.8rem; color:var(--text-muted);">Preview: <b
+                  id="cfgPartAPreview">Answer ALL 5 Questions • 5 × 2M = 10M</b></div>
+            </div>
+            <!-- Part B Config -->
+            <div
+              style="background:var(--card-bg); border:1px solid var(--border-color); border-radius:12px; padding:1.1rem;">
+              <div style="font-weight:800; color:var(--primary); font-size:0.95rem; margin-bottom:0.85rem;">📄 Part B
+              </div>
+              <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+                <div class="form-group">
+                  <label>No. of Questions</label>
+                  <input type="number" id="cfgPartBCount" class="form-control" value="3" min="1" max="20">
+                </div>
+                <div class="form-group">
+                  <label>Marks per Question</label>
+                  <input type="number" id="cfgPartBMarks" class="form-control" value="10" min="1" max="30">
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Students must attempt (Any N)</label>
+                <input type="number" id="cfgPartBAttemptN" class="form-control" value="2" min="1" max="20">
+              </div>
+              <div style="margin-top:0.5rem; font-size:0.8rem; color:var(--text-muted);">Preview: <b
+                  id="cfgPartBPreview">Answer ANY 2 out of 3 Questions • 2 × 10M = 20M</b></div>
+            </div>
+          </div>
+          <div style="margin-top:1.1rem; display:flex; gap:0.75rem; align-items:center;">
+            <button id="applyQpStructureBtn" class="btn btn-success" style="padding:0.55rem 1.4rem;">✅ Apply Structure &
+              Regenerate Questions</button>
+            <span id="qpStructureMsg" style="font-size:0.82rem; color:var(--success); display:none;"></span>
+          </div>
+        </div>
+      </section>
+
       <!-- CO Module Upload for Auto-Detection -->
       <section class="panel" id="coModulePanel">
         <div class="panel-header">
@@ -446,8 +519,8 @@ PART B
 
           <!-- Part A Section -->
           <div class="qp-part-title">
-            <span>Part A: Answer ALL the Questions. Each question carries 2 marks.</span>
-            <span class="text-right">5Q x 2M=10M</span>
+            <span id="prevPartALabel">Part A: Answer ALL the Questions. Each question carries 2 marks.</span>
+            <span class="text-right" id="prevPartAMarksLabel">5Q × 2M = 10M</span>
           </div>
 
           <table class="qp-table">
@@ -464,9 +537,9 @@ PART B
           </table>
 
           <!-- Part B Section -->
-          <div class="qp-part-title part-b-start">
-            <span>Part B: Answer any two of the Questions.</span>
-            <span class="text-right">2Qx 10M = 20M</span>
+          <div class="qp-part-title">
+            <span id="prevPartBLabel">Part B: Answer any two of the Questions.</span>
+            <span class="text-right" id="prevPartBMarksLabel">2 × 10M = 20M</span>
           </div>
 
           <table class="qp-table">

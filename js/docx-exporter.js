@@ -222,43 +222,51 @@ class QPExporter {
       <head>
         <title>Question Paper Print Preview</title>
         <style>
-          @page { size: A4 portrait; margin: 15mm; }
+          @page { size: A4 portrait; margin: 8mm 10mm; }
           body {
             font-family: 'Times New Roman', Times, serif;
-            font-size: 10.5pt;
-            line-height: 1.3;
-            color: #000000;
-            background: #ffffff;
+            font-size: 8pt;
+            line-height: 1.25;
+            color: #000;
+            background: #fff;
             margin: 0;
-            padding: 10px;
+            padding: 0;
           }
-          .title-header { text-align: center; font-weight: bold; font-size: 13pt; text-transform: uppercase; }
-          .sub-header { text-align: center; font-weight: bold; font-size: 11pt; text-transform: uppercase; margin-bottom: 12px; }
-          table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
-          td, th { border: 1pt solid #000000; padding: 3pt 5pt; vertical-align: top; font-size: 9.5pt; color: #000; }
-          .qp-part-title, .part-header {
-            font-weight: bold; font-size: 10pt; margin-top: 10px; margin-bottom: 4px;
-            display: flex; justify-content: space-between;
+          /* Each complete set (Part A + Part B) is a block */
+          .qp-set-block {
+            margin-bottom: 0;
+            padding-bottom: 3pt;
           }
-          /* ── FRONT / BACK: Part B always starts on a new page (back of sheet) ── */
-          .part-b-start, .part-b-header {
-            page-break-before: always !important;
-            break-before: page !important;
-            padding-top: 4mm;
+          /* Divider between sets — no forced page break; browser autoflows */
+          .qp-set-divider {
+            border-top: 2pt solid #000;
+            margin: 4pt 0;
           }
-          .text-center { text-align: center; }
-          .font-bold { font-weight: bold; }
-          img { max-width: 280px; max-height: 160px; }
+          .title-header { text-align:center; font-weight:bold; font-size:9.5pt; text-transform:uppercase; margin:0; }
+          .sub-header   { text-align:center; font-weight:bold; font-size:8pt; text-transform:uppercase; margin:0 0 2pt; }
+          .set-badge    { float:right; font-weight:bold; font-size:8pt; border:1pt solid #000; padding:1pt 4pt; }
+          table { width:100%; border-collapse:collapse; margin-bottom:3pt; }
+          td, th { border:0.5pt solid #000; padding:1.5pt 3pt; vertical-align:top; font-size:7.5pt; }
+          th { background:#f0f0f0; font-weight:bold; }
+          .part-header {
+            font-weight:bold; font-size:7.5pt; margin:2pt 0 1pt;
+            display:flex; justify-content:space-between;
+          }
+          .text-center { text-align:center; }
+          .font-bold { font-weight:bold; }
+          img { max-width:200px; max-height:120px; }
+          /* If a set cannot fit on current page, start it on a new page */
+          .qp-set-block { page-break-inside: avoid; }
+          @media print {
+            .qp-set-block { page-break-inside: avoid; }
+          }
         </style>
       </head>
       <body>
         <div>${paperHtml}</div>
         <script>
           window.onload = function() {
-            setTimeout(function() {
-              window.print();
-              window.close();
-            }, 300);
+            setTimeout(function() { window.print(); window.close(); }, 300);
           };
         </script>
       </body>
@@ -271,11 +279,19 @@ class QPExporter {
     const partA = qpData.partA || [];
     const partB = qpData.partB || [];
 
+    // Get dynamic labels from builder config if available
+    const builder = (typeof window !== 'undefined') && window.builderInstance;
+    const partALabel = builder ? builder.getPartALabel() : 'Answer ALL the Questions. Each question carries 2 marks.';
+    const partBLabel = builder ? builder.getPartBLabel() : 'Answer ANY 2 out of 3 Questions. Each question carries 10 marks.';
+
+    const logo = (typeof window !== 'undefined' && window.PRESIDENCY_LOGO_BASE64)
+      ? window.PRESIDENCY_LOGO_BASE64 : 'images/presidency_logo.png';
+
     let partAHtml = partA.map((q, i) => `
       <tr>
         <td class="text-center font-bold">${q.qNo || (i + 1)}.</td>
-        <td>${this.escapeHtml(q.text)}${q.tableHtml ? '<br>' + q.tableHtml : ''}</td>
-        <td class="text-center">${q.marks || 2} Marks</td>
+        <td>${this.escapeHtml(q.text)}${q.tableHtml ? '<br>' + q.tableHtml : ''}${q.imageUrl ? '<br><img src="' + q.imageUrl + '">' : ''}</td>
+        <td class="text-center">${q.marks || 2}M</td>
         <td class="text-center">${q.bloom || 'L1'}</td>
         <td class="text-center">${q.co || 'CO1'}</td>
       </tr>
@@ -283,30 +299,32 @@ class QPExporter {
 
     let partBHtml = partB.map((q, i) => `
       <tr>
-        <td class="text-center font-bold">${q.qNo || (i + 6)}.</td>
-        <td>${this.escapeHtml(q.text)}${q.tableHtml ? '<br>' + q.tableHtml : ''}</td>
-        <td class="text-center">${q.marks || 10} Marks</td>
+        <td class="text-center font-bold">${q.qNo || (partA.length + i + 1)}.</td>
+        <td>${this.escapeHtml(q.text)}${q.tableHtml ? '<br>' + q.tableHtml : ''}${q.imageUrl ? '<br><img src="' + q.imageUrl + '">' : ''}</td>
+        <td class="text-center">${q.marks || 10}M</td>
         <td class="text-center">${q.bloom || 'L3'}</td>
         <td class="text-center">${q.co || 'CO1'}</td>
       </tr>
     `).join('');
 
     return `
-      <div style="float: right; font-weight: bold;">${setName}</div>
-      <div style="text-align: center; margin-bottom: 6px;">
-        <img src="${(typeof window !== 'undefined' && window.PRESIDENCY_LOGO_BASE64) ? window.PRESIDENCY_LOGO_BASE64 : 'images/presidency_logo.png'}" style="width:70px; height:70px; object-fit:contain;" alt="Presidency University" />
+      <div class="qp-set-block">
+        <div class="set-badge">${setName}</div>
+        <div style="text-align:center; margin-bottom:2pt;">
+          <img src="${logo}" style="width:40px; height:40px; object-fit:contain;" alt="Presidency University" />
+        </div>
+        <div class="title-header">PRESIDENCY UNIVERSITY BENGALURU</div>
+        <div class="sub-header">SCHOOL OF INFORMATION SCIENCE</div>
+        <table>
+          <tr><td colspan="3" class="text-center font-bold">${meta.examTitle || ''}</td></tr>
+          <tr><td><b>Course Code:</b> ${meta.courseCode || ''}</td><td><b>Course Name:</b> ${meta.courseName || ''}</td><td><b>Date:</b> ${meta.date || ''}</td></tr>
+          <tr><td><b>Semester:</b> ${meta.semester || ''}</td><td><b>Max Marks:</b> ${meta.maxMarks || ''} Marks</td><td><b>Time:</b> ${meta.duration || ''}</td></tr>
+        </table>
+        <div class="part-header"><span>Part A: ${partALabel}</span></div>
+        <table><thead><tr><th style="width:7%;">Q.No</th><th style="width:65%;">Question Text</th><th style="width:10%;">Marks</th><th style="width:9%;">L</th><th style="width:9%;">CO</th></tr></thead><tbody>${partAHtml}</tbody></table>
+        <div class="part-header"><span>Part B: ${partBLabel}</span></div>
+        <table><thead><tr><th style="width:7%;">Q.No</th><th style="width:65%;">Question Text</th><th style="width:10%;">Marks</th><th style="width:9%;">L</th><th style="width:9%;">CO</th></tr></thead><tbody>${partBHtml}</tbody></table>
       </div>
-      <div class="title-header">PRESIDENCY UNIVERSITY BENGALURU</div>
-      <div class="sub-header">SCHOOL OF INFORMATION SCIENCE</div>
-      <table>
-        <tr><td colspan="3" class="text-center font-bold">${meta.examTitle}</td></tr>
-        <tr><td><b>Course Code:</b> ${meta.courseCode}</td><td><b>Course Name:</b> ${meta.courseName}</td><td><b>Date:</b> ${meta.date}</td></tr>
-        <tr><td><b>Semester:</b> ${meta.semester}</td><td><b>Max Marks:</b> ${meta.maxMarks} Marks</td><td><b>Time:</b> ${meta.duration}</td></tr>
-      </table>
-      <div class="part-header">Part A: Answer ALL the Questions. Each question carries 2 marks. <span style="float:right;">10M</span></div>
-      <table><thead><tr><th style="width:8%;">Q.No</th><th style="width:66%;">Question Text</th><th style="width:12%;">Marks</th><th style="width:7%;">L</th><th style="width:7%;">CO</th></tr></thead><tbody>${partAHtml}</tbody></table>
-      <div class="part-header part-b-header">Part B: Answer any two of the Questions. <span style="float:right;">20M</span></div>
-      <table><thead><tr><th style="width:8%;">Q.No</th><th style="width:66%;">Question Text</th><th style="width:12%;">Marks</th><th style="width:7%;">L</th><th style="width:7%;">CO</th></tr></thead><tbody>${partBHtml}</tbody></table>
     `;
   }
 

@@ -561,13 +561,35 @@ document.addEventListener('DOMContentLoaded', () => {
     prevTime.textContent = meta.duration;
     prevSetBadge.textContent = builder.currentSet;
 
+    // Dynamic Part A/B instruction headers from config
+    const prevPartALabel = document.getElementById('prevPartALabel');
+    const prevPartAMarksLabel = document.getElementById('prevPartAMarksLabel');
+    const prevPartBLabel = document.getElementById('prevPartBLabel');
+    const prevPartBMarksLabel = document.getElementById('prevPartBMarksLabel');
+
+    const cfgA = builder.config.partA;
+    const cfgB = builder.config.partB;
+
+    if (prevPartALabel) {
+      if (cfgA.attemptAll) {
+        prevPartALabel.textContent = `Part A: Answer ALL ${cfgA.count} Questions. Each question carries ${cfgA.marks} Mark${cfgA.marks > 1 ? 's' : ''}.`;
+        if (prevPartAMarksLabel) prevPartAMarksLabel.textContent = `${cfgA.count} × ${cfgA.marks}M = ${cfgA.count * cfgA.marks}M`;
+      } else {
+        prevPartALabel.textContent = `Part A: Answer ANY ${cfgA.attemptN} out of ${cfgA.count} Questions. Each question carries ${cfgA.marks} Mark${cfgA.marks > 1 ? 's' : ''}.`;
+        if (prevPartAMarksLabel) prevPartAMarksLabel.textContent = `${cfgA.attemptN} × ${cfgA.marks}M = ${cfgA.attemptN * cfgA.marks}M`;
+      }
+    }
+    if (prevPartBLabel) {
+      prevPartBLabel.textContent = `Part B: Answer ANY ${cfgB.attemptN} out of ${cfgB.count} Questions. Each question carries ${cfgB.marks} Mark${cfgB.marks > 1 ? 's' : ''}.`;
+      if (prevPartBMarksLabel) prevPartBMarksLabel.textContent = `${cfgB.attemptN} × ${cfgB.marks}M = ${cfgB.attemptN * cfgB.marks}M`;
+    }
+
     prevPartATableBody.innerHTML = '';
     currentData.partA.forEach((q) => {
       const tr = document.createElement('tr');
       let textContent = exporter.escapeHtml(q.text);
       if (q.tableHtml) textContent += `<br>${q.tableHtml}`;
       if (q.imageUrl) textContent += `<br><img src="${q.imageUrl}" class="prev-img" />`;
-
       tr.innerHTML = `
         <td class="text-center font-bold">${q.qNo}.</td>
         <td>${textContent}</td>
@@ -584,7 +606,6 @@ document.addEventListener('DOMContentLoaded', () => {
       let textContent = exporter.escapeHtml(q.text);
       if (q.tableHtml) textContent += `<br>${q.tableHtml}`;
       if (q.imageUrl) textContent += `<br><img src="${q.imageUrl}" class="prev-img" />`;
-
       tr.innerHTML = `
         <td class="text-center font-bold">${q.qNo}.</td>
         <td>${textContent}</td>
@@ -598,6 +619,91 @@ document.addEventListener('DOMContentLoaded', () => {
 
   renderForm();
   updatePreview();
+
+  // ── QP STRUCTURE CONFIG PANEL ─────────────────────────────────────────────
+  (function initQpStructurePanel() {
+    const toggleBtn = document.getElementById('toggleQpStructureBtn');
+    const body = document.getElementById('qpStructureBody');
+    const applyBtn = document.getElementById('applyQpStructureBtn');
+    const msg = document.getElementById('qpStructureMsg');
+
+    const cfgACount = document.getElementById('cfgPartACount');
+    const cfgAMarks = document.getElementById('cfgPartAMarks');
+    const cfgAType = document.getElementById('cfgPartAAttemptType');
+    const cfgANWrap = document.getElementById('cfgPartAAttemptNWrapper');
+    const cfgAN = document.getElementById('cfgPartAAttemptN');
+    const previewA = document.getElementById('cfgPartAPreview');
+
+    const cfgBCount = document.getElementById('cfgPartBCount');
+    const cfgBMarks = document.getElementById('cfgPartBMarks');
+    const cfgBN = document.getElementById('cfgPartBAttemptN');
+    const previewB = document.getElementById('cfgPartBPreview');
+
+    if (!toggleBtn || !body) return;
+
+    // Toggle show/hide
+    toggleBtn.addEventListener('click', () => {
+      const open = body.style.display !== 'none';
+      body.style.display = open ? 'none' : 'block';
+      toggleBtn.textContent = open ? '▼ Show / Edit' : '▲ Hide';
+    });
+
+    // Show/hide Part A attempt-N input
+    cfgAType && cfgAType.addEventListener('change', () => {
+      if (cfgANWrap) cfgANWrap.style.display = cfgAType.value === 'any' ? 'block' : 'none';
+      refreshPreviews();
+    });
+
+    // Live preview text update
+    function refreshPreviews() {
+      if (!cfgACount || !cfgAMarks || !cfgBCount || !cfgBMarks) return;
+      const aCount = parseInt(cfgACount.value, 10) || 5;
+      const aMarks = parseInt(cfgAMarks.value, 10) || 2;
+      const aAll = !cfgAType || cfgAType.value === 'all';
+      const aN = parseInt((cfgAN && cfgAN.value) || aCount, 10);
+      const bCount = parseInt(cfgBCount.value, 10) || 3;
+      const bMarks = parseInt(cfgBMarks.value, 10) || 10;
+      const bN = parseInt((cfgBN && cfgBN.value) || 2, 10);
+
+      if (previewA) {
+        if (aAll) previewA.textContent = `Answer ALL ${aCount} Questions • ${aCount} × ${aMarks}M = ${aCount * aMarks}M`;
+        else previewA.textContent = `Answer ANY ${aN} out of ${aCount} Questions • ${aN} × ${aMarks}M = ${aN * aMarks}M`;
+      }
+      if (previewB) previewB.textContent = `Answer ANY ${bN} out of ${bCount} Questions • ${bN} × ${bMarks}M = ${bN * bMarks}M`;
+    }
+
+    [cfgACount, cfgAMarks, cfgAN, cfgBCount, cfgBMarks, cfgBN].forEach(el => {
+      el && el.addEventListener('input', refreshPreviews);
+    });
+
+    // Apply button — rebuild structure
+    applyBtn && applyBtn.addEventListener('click', () => {
+      const aCount = parseInt(cfgACount.value, 10) || 5;
+      const aMarks = parseInt(cfgAMarks.value, 10) || 2;
+      const aAll = !cfgAType || cfgAType.value === 'all';
+      const aN = parseInt((cfgAN && cfgAN.value) || aCount, 10);
+      const bCount = parseInt(cfgBCount.value, 10) || 3;
+      const bMarks = parseInt(cfgBMarks.value, 10) || 10;
+      const bN = parseInt((cfgBN && cfgBN.value) || 2, 10);
+
+      builder.setConfig(aCount, aMarks, aAll, aN, bCount, bMarks, bN);
+      renderForm();
+      updatePreview();
+
+      if (msg) {
+        msg.textContent = `✅ Structure applied: Part A = ${aCount}Q × ${aMarks}M, Part B = ${bCount}Q × ${bMarks}M`;
+        msg.style.display = 'inline';
+        setTimeout(() => { msg.style.display = 'none'; }, 4000);
+      }
+
+      // Collapse the panel after applying
+      body.style.display = 'none';
+      toggleBtn.textContent = '▼ Show / Edit';
+    });
+
+    // Init previews
+    refreshPreviews();
+  })();
 
   // ── FORGOT PASSWORD FLOW ─────────────────────────────────────────────────
   const forgotPasswordLink = document.getElementById('forgotPasswordLink');
